@@ -8,7 +8,7 @@
 #include <QFile>
 #include <QElapsedTimer>
 #include <QtTest>
-using namespace daymark;
+using namespace tilo;
 class EventTestClock:public IClock {public:QDateTime now=QDateTime(QDate(2026,3,7),QTime(14,0),QTimeZone::UTC);QDate localToday()const override{return now.date();}QDateTime nowUtc()const override{return now;}};
 class EventServiceTest:public QObject {
     Q_OBJECT

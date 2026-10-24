@@ -3,7 +3,7 @@
 #include "persistence/TaskRepository.h"
 #include "services/CatalogService.h"
 
-namespace daymark {
+namespace tilo {
 
 class QueryService final {
 public:
@@ -26,4 +26,4 @@ private:
     CatalogService* m_catalog=nullptr;
 };
 
-} // namespace daymark
+} // namespace tilo

@@ -5,7 +5,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-using namespace daymark;
+using namespace tilo;
 
 class FixedClock final : public IClock {
 public:

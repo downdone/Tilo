@@ -1,6 +1,6 @@
 #include "CatalogService.h"
 #include <QSet>
-namespace daymark {
+namespace tilo {
 Result<CatalogItem> CatalogService::save(CatalogItem item)
 {
     item.title=item.title.trimmed();

@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Templates as T
 T.ScrollView {
     id: control
-    objectName: "daymarkScrollView"
+    objectName: "tiloScrollView"
     // Vertical surfaces take their width from the host; deriving it back from
     // availableWidth would create a dialog -> content -> dialog sizing cycle.
     implicitWidth: 240

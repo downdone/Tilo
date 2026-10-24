@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
-import DaymarkStyle as DS
+import TiloStyle as DS
 import QtQuick.Templates as T
 T.Switch {
     id: control

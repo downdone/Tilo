@@ -4,7 +4,7 @@ FR-002/006/007/008/009/014/018；UX-01/04/05/06/07/09/10/11。用户指出详情
 
 ## 依据与问题
 
-Apple [Layout](https://developer.apple.com/design/human-interface-guidelines/layout)要求以重要性、对齐、相关性分组及渐进呈现建立层次，并在文字变大时重排；[Text fields](https://developer.apple.com/design/human-interface-guidelines/text-fields)强调可辨识标签及与内容匹配的输入尺寸。2026-10-24读取官方同域.md。以下分组、断点和DIP均是Daymark决定；Windows系统字体/窗口、UI-15颜色与完整状态继续有效，不模拟Liquid Glass。
+Apple [Layout](https://developer.apple.com/design/human-interface-guidelines/layout)要求以重要性、对齐、相关性分组及渐进呈现建立层次，并在文字变大时重排；[Text fields](https://developer.apple.com/design/human-interface-guidelines/text-fields)强调可辨识标签及与内容匹配的输入尺寸。2026-10-24读取官方同域.md。以下分组、断点和DIP均是Tilo决定；Windows系统字体/窗口、UI-15颜色与完整状态继续有效，不模拟Liquid Glass。
 
 现状：空备注占据大块高度；规划状态整行、关注和今晚跨组；互斥归属同时展示两框；无意义禁用分组、空标签/关联和只读时间各成卡片。卡片背景只是包裹字段，没有解决任务操作的主次。
 

@@ -4,7 +4,7 @@
 #include <QSet>
 #include <climits>
 
-namespace daymark {
+namespace tilo {
 
 bool QueryService::effectiveActive(const Task& t)
 {
@@ -221,4 +221,4 @@ Result<void> TaskService::batch(const QList<QPair<QString,qint64>>& selection,co
     });
 }
 
-} // namespace daymark
+} // namespace tilo

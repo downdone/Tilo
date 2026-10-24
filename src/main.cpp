@@ -11,17 +11,17 @@
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
-    QCoreApplication::setApplicationName(QStringLiteral("Daymark"));
-    QCoreApplication::setOrganizationName(QStringLiteral("Daymark"));
-    QCoreApplication::setApplicationVersion(QStringLiteral(DAYMARK_VERSION));
+    QCoreApplication::setApplicationName(QStringLiteral("Tilo"));
+    QCoreApplication::setOrganizationName(QStringLiteral("Tilo"));
+    QCoreApplication::setApplicationVersion(QStringLiteral(TILO_VERSION));
     QIcon applicationIcon;
-    for(const int size:{16,32,48,256})applicationIcon.addFile(QStringLiteral(":/daymark/icons/daymark-%1.png").arg(size));
+    for(const int size:{16,32,48,256})applicationIcon.addFile(QStringLiteral(":/tilo/icons/tilo-%1.png").arg(size));
     QApplication::setWindowIcon(applicationIcon);
-    QQuickStyle::setStyle(QStringLiteral("DaymarkStyle"));
+    QQuickStyle::setStyle(QStringLiteral("TiloStyle"));
     QQuickStyle::setFallbackStyle(QStringLiteral("Basic"));
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("Daymark Windows V1 release candidate"));
+    parser.setApplicationDescription(QStringLiteral("Tilo Windows V1 release candidate"));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addOption({QStringLiteral("smoke-test"), QStringLiteral("Check QML startup and exit without user data access.")});
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
         });
     }
 
-    daymark::AppRuntime runtime;
+    tilo::AppRuntime runtime;
     if (!runtime.start(verification,parser.value(QStringLiteral("data-dir")),parser.value(QStringLiteral("screenshot")),soakSeconds,parser.value(QStringLiteral("soak-report"))))
         return runtime.startupExitCode();
     return app.exec();

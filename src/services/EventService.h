@@ -1,7 +1,7 @@
 #pragma once
 #include "persistence/EventRepository.h"
 #include <QVariantList>
-namespace daymark {
+namespace tilo {
 class EventService final {
 public:
     EventService(EventRepository& repository,const IClock& clock):m_repository(repository),m_clock(clock){}

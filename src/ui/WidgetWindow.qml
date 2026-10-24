@@ -1,6 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
-import DaymarkStyle as DS
+import TiloStyle as DS
 import QtQuick.Controls
 import QtQuick.Layouts
 
@@ -20,7 +20,7 @@ Window {
     y: 80
     visible: false
     color: "transparent"
-    title: qsTr("Daymark 今日任务")
+    title: qsTr("Tilo 今日任务")
     function verifyMenu() {
         if(!widgetMenu.visible)return "closed"
         for(let i=0;i<widgetMenu.count;i++) {

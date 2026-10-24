@@ -1,7 +1,7 @@
 #pragma once
 #include "SqliteDatabase.h"
 #include <QJsonObject>
-namespace daymark {
+namespace tilo {
 struct ImportPlan {QJsonObject document;int rows=0;};
 struct ImportOutcome {int added=0,skipped=0;bool settingsApplied=true;};
 class DataTransfer final {

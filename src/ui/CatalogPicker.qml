@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import DaymarkStyle as DS
+import TiloStyle as DS
 Popup {
     id: root
     property string heading: ""

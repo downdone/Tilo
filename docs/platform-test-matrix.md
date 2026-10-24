@@ -1,6 +1,6 @@
 # 平台验证矩阵
 
-2026-10-22，1.0.0-rc.1 Windows本地候选。用户确认暂缺macOS环境；PASS只针对行内所述范围，macOS未执行任何本轮构建。
+PASS 只针对行内所述范围。macOS 两架构均未执行任何构建或人工验收；没有实机证据的项目一律保持 UNVERIFIED。
 
 | 场景 | Windows11 x64 / Qt6.10.2 MinGW | macOS Intel | macOS Apple Silicon |
 |---|---|---|---|
@@ -22,7 +22,7 @@
 | 真实拖动/缩放/层级/焦点/穿透外部恢复 | UNVERIFIED；代码入口已实现 | UNVERIFIED | UNVERIFIED |
 | 托盘关闭保留进程/系统通知权限与送达 | UNVERIFIED；代码已实现 | UNVERIFIED | UNVERIFIED |
 | 屏幕热插拔/DPI/系统午夜/睡眠/时区 | UNVERIFIED；边界算法/定时刷新已有 | UNVERIFIED | UNVERIFIED |
-| 10k混合数据加载/搜索/月索引 | PASS；155/2/11 ms，i7-13700HX Release数据层 | UNVERIFIED | UNVERIFIED |
+| 10k混合数据加载/搜索/月索引 | PASS；Release 数据层约 155/2/11 ms（单机测量，非设备承诺） | UNVERIFIED | UNVERIFIED |
 | 透明桌面可读性/IME/读屏/高对比 | UNVERIFIED | UNVERIFIED | UNVERIFIED |
 | 签名/独立干净机/8h稳定性 | UNVERIFIED | UNVERIFIED | UNVERIFIED |
 
@@ -39,7 +39,7 @@
 | Release 10k混合数据层 | PASS；129/1/8ms加载/搜索/月索引 | UNVERIFIED |
 | 8h、真实睡眠、物理拔屏/DPI、闲置CPU与内存趋势 | UNVERIFIED；短跑不能替代 | UNVERIFIED |
 
-本轮数据与短跑限制见[验证报告](verification-report.md)，执行方法见[指南](stability-guide.md)。
+本轮短跑限制见上文，完整执行方法见[稳定性验收指南](stability-guide.md)。
 
 ## CAL-05浏览与定位补充（2026-10-24）
 
@@ -48,3 +48,5 @@ Windows自动：实例排序/只读/失效key/软删测试PASS；Qt合成主/独
 UI-18：Windows原生219阶段自动合成场景/截图PASS，包括快速→完整共享草稿、明确离开保护、内联日期和独立日期菜单当前值、时间选择取消/错误保留、深色200%固定操作及既有滚动回归。最终构建/CTest/严格本地部署数据见PROGRESS；不等同真实鼠标/IME/读屏验收，macOS仍UNVERIFIED。
 
 UI-19验收范围：Windows新增原行展开/完整可见、长备注摘要不丢内容、大字号焦点与手动滚动、新建资料与任务草稿的独立提交、成功完成反馈/减少动态效果、菜单同窗呈现和10k菜单可用性预算。命令耗时与原生两次呈现上界分别记录，不宣称所有物理输入延迟。最终执行结果见PROGRESS；真实键鼠/IME/读屏/多屏/睡眠/8h/干净机和macOS仍UNVERIFIED。
+
+UI-20新增行范围：连续跨日周段/循环日程实际实例与时间预览、精简提醒一次提交、任务和清单合成拖动/Esc/落库、导航独立折叠偏好、校验错误放弃和存储错误保留。Windows构建/数据/合成QML证据见PROGRESS；物理手势/真实键盘读屏/平台系统门禁及macOS仍UNVERIFIED。

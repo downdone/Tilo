@@ -3,7 +3,7 @@
 #include <QTemporaryDir>
 #include <QTimeZone>
 #include <QtTest>
-using namespace daymark;
+using namespace tilo;
 class ReminderClock:public IClock {
 public:QDateTime now=QDateTime(QDate(2024,3,9),QTime(12,0),QTimeZone::UTC);
     QDate localToday()const override{return now.date();}QDateTime nowUtc()const override{return now;}

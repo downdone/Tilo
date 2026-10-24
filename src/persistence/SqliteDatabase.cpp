@@ -7,9 +7,9 @@
 #include <QUuid>
 #include <QSettings>
 
-static void initializeSchemaResource() { Q_INIT_RESOURCE(daymark_schema); }
+static void initializeSchemaResource() { Q_INIT_RESOURCE(tilo_schema); }
 
-namespace daymark {
+namespace tilo {
 Result<void> SqliteDatabase::checkIntegrity() const
 {
     QSqlQuery check(m_db);
@@ -32,7 +32,7 @@ Result<void> MigrationManager::initialize(QSqlDatabase& db)
     if (version == 4)
         return {};
     if(version==3) {
-        initializeSchemaResource();QFile schema(QStringLiteral(":/daymark/src/persistence/migrations/004_event_series.sql"));
+        initializeSchemaResource();QFile schema(QStringLiteral(":/tilo/src/persistence/migrations/004_event_series.sql"));
         if(!schema.open(QIODevice::ReadOnly))return Result<void>::failure(ErrorCode::PersistenceError,QStringLiteral("schemaResource"));
         if(!db.transaction())return Result<void>::failure(ErrorCode::PersistenceError,QStringLiteral("databaseWrite"));
         for(const auto& statement:QString::fromUtf8(schema.readAll()).split(';',Qt::SkipEmptyParts))if(!statement.trimmed().isEmpty() && !query.exec(statement)){db.rollback();return Result<void>::failure(ErrorCode::PersistenceError,QStringLiteral("migrationFailed"));}
@@ -40,7 +40,7 @@ Result<void> MigrationManager::initialize(QSqlDatabase& db)
     }
     if(version==2) {
         initializeSchemaResource();
-        QFile schema(QStringLiteral(":/daymark/src/persistence/migrations/003_calendar_events.sql"));
+        QFile schema(QStringLiteral(":/tilo/src/persistence/migrations/003_calendar_events.sql"));
         if(!schema.open(QIODevice::ReadOnly))return Result<void>::failure(ErrorCode::PersistenceError,QStringLiteral("schemaResource"));
         if(!db.transaction())return Result<void>::failure(ErrorCode::PersistenceError,QStringLiteral("databaseWrite"));
         for(const auto& statement:QString::fromUtf8(schema.readAll()).split(';',Qt::SkipEmptyParts)) {
@@ -51,7 +51,7 @@ Result<void> MigrationManager::initialize(QSqlDatabase& db)
     }
     if(version==1) {
         initializeSchemaResource();
-        QFile schema(QStringLiteral(":/daymark/src/persistence/migrations/002_area_archive.sql"));
+        QFile schema(QStringLiteral(":/tilo/src/persistence/migrations/002_area_archive.sql"));
         if(!schema.open(QIODevice::ReadOnly))return Result<void>::failure(ErrorCode::PersistenceError,QStringLiteral("schemaResource"));
         if(!db.transaction())return Result<void>::failure(ErrorCode::PersistenceError,QStringLiteral("databaseWrite"));
         for(const auto& statement:QString::fromUtf8(schema.readAll()).split(';',Qt::SkipEmptyParts)) {
@@ -68,7 +68,7 @@ Result<void> MigrationManager::initialize(QSqlDatabase& db)
         return Result<void>::failure(ErrorCode::ValidationError, QStringLiteral("unknownSchema"));
     query.finish();
     initializeSchemaResource();
-    QFile schema(QStringLiteral(":/daymark/src/persistence/migrations/001_init.sql"));
+    QFile schema(QStringLiteral(":/tilo/src/persistence/migrations/001_init.sql"));
     if (!schema.open(QIODevice::ReadOnly))
         return Result<void>::failure(ErrorCode::PersistenceError, QStringLiteral("schemaResource"));
     if (!db.transaction())
@@ -168,7 +168,7 @@ Result<QString> SqliteDatabase::createSnapshot(const QString& directory)
     QSqlQuery version(m_db);
     if(!version.exec(QStringLiteral("PRAGMA user_version")) || !version.next())return Result<QString>::failure(ErrorCode::PersistenceError,QStringLiteral("backupFailed"));
     const int schemaVersion=version.value(0).toInt();version.finish();
-    const auto name = QStringLiteral("daymark-v%1-%2-%3.sqlite")
+    const auto name = QStringLiteral("tilo-v%1-%2-%3.sqlite")
         .arg(schemaVersion).arg(QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd-HHmmss-zzz")),
              QUuid::createUuid().toString(QUuid::WithoutBraces));
     const auto path = QDir(directory).absoluteFilePath(name);
@@ -180,4 +180,4 @@ Result<QString> SqliteDatabase::createSnapshot(const QString& directory)
     return {path, {}};
 }
 
-} // namespace daymark
+} // namespace tilo

@@ -2,7 +2,7 @@
 #include "persistence/SqliteDatabase.h"
 #include <QTemporaryDir>
 #include <QtTest>
-using namespace daymark;
+using namespace tilo;
 class CalendarServiceTest:public QObject {
     Q_OBJECT
 private slots:

@@ -52,10 +52,10 @@ Dialog {
     }
     }
     footer: DialogButtonBox { Button { text: qsTr("返回"); enabled: !root.workspace.busy; onClicked: root.close() } }
-    NativeDialogs.FileDialog { id: exportJson; title: qsTr("导出Daymark JSON"); fileMode: NativeDialogs.FileDialog.SaveFile; nameFilters: ["Daymark JSON (*.json)"]; defaultSuffix: "json"; onAccepted: root.workspace.exportData(selectedFile.toString(),false) }
+    NativeDialogs.FileDialog { id: exportJson; title: qsTr("导出Tilo JSON"); fileMode: NativeDialogs.FileDialog.SaveFile; nameFilters: ["Tilo JSON (*.json)"]; defaultSuffix: "json"; onAccepted: root.workspace.exportData(selectedFile.toString(),false) }
     NativeDialogs.FileDialog { id: exportCsv; title: qsTr("导出CSV"); fileMode: NativeDialogs.FileDialog.SaveFile; nameFilters: ["CSV (*.csv)"]; defaultSuffix: "csv"; onAccepted: root.workspace.exportData(selectedFile.toString(),true) }
-    NativeDialogs.FileDialog { id: importJson; title: qsTr("选择Daymark JSON"); fileMode: NativeDialogs.FileDialog.OpenFile; nameFilters: ["Daymark JSON (*.json)"]; onAccepted: root.workspace.previewImport(selectedFile.toString(),false) }
-    NativeDialogs.FileDialog { id: restoreSnapshot; title: qsTr("选择Daymark一致性快照"); fileMode: NativeDialogs.FileDialog.OpenFile; nameFilters: ["Daymark snapshot (*.sqlite)"]; onAccepted: root.workspace.previewImport(selectedFile.toString(),true) }
+    NativeDialogs.FileDialog { id: importJson; title: qsTr("选择Tilo JSON"); fileMode: NativeDialogs.FileDialog.OpenFile; nameFilters: ["Tilo JSON (*.json)"]; onAccepted: root.workspace.previewImport(selectedFile.toString(),false) }
+    NativeDialogs.FileDialog { id: restoreSnapshot; title: qsTr("选择Tilo一致性快照"); fileMode: NativeDialogs.FileDialog.OpenFile; nameFilters: ["Tilo snapshot (*.sqlite)"]; onAccepted: root.workspace.previewImport(selectedFile.toString(),true) }
     Dialog {
         id: replaceFirst
         parent: Overlay.overlay

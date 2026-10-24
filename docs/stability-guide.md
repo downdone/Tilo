@@ -1,10 +1,10 @@
 # Windows连续稳定性验收
 
-本工具运行一个持续存活的原生Daymark进程，使用QTemporaryDir合成数据库；不会打开现有任务库、注册开机启动、建立托盘或发送系统通知。先执行完整UI smoke，再循环完整任务编辑、完成/恢复、软删/撤销、备份、完整性检查、重载及窗口/视图切换。退出时清理临时库，只保留匿名验收报告。
+本工具运行一个持续存活的原生Tilo进程，使用QTemporaryDir合成数据库；不会打开现有任务库、注册开机启动、建立托盘或发送系统通知。先执行完整UI smoke，再循环完整任务编辑、完成/恢复、软删/撤销、备份、完整性检查、重载及窗口/视图切换。退出时清理临时库，只保留匿名验收报告。
 
 ## Windows
 
-先按[环境说明](environment.md)设置DAYMARK_QT/DAYMARK_MINGW并构建Release：
+先按[环境说明](environment.md)设置TILO_QT/TILO_MINGW并构建Release：
 
 ```powershell
 ./scripts/build-windows.ps1 -Preset windows-release
@@ -15,7 +15,7 @@
 ./scripts/test-stability-windows.ps1
 ```
 
-可用`-Executable`选择已解压的候选版daymark.exe。每次输出新build/stability-时间-随机后缀目录，保留runtime.json、resources.csv、summary.json和本机诊断日志。报告不记录标题/备注或数据库路径；诊断日志可能含SDK路径，留在忽略的build内，不直接上传。
+可用`-Executable`选择已解压的候选版tilo.exe。每次输出新build/stability-时间-随机后缀目录，保留runtime.json、resources.csv、summary.json和本机诊断日志。报告不记录标题/备注或数据库路径；诊断日志可能含SDK路径，留在忽略的build内，不直接上传。
 
 - runtime.json：实际连续循环时长、UTC起止、循环数、SQLite quick_check/foreign_key_check次数、事件循环最大延迟和长暂停次数。写失败或业务/完整性错误非零退出。
 - resources.csv：采样时刻、工作集、私有内存、CPU占用。cpuCorePercent以一个逻辑核占满为100%，cpuMachinePercent除以逻辑核数。包含初始化及活跃操作，不是纯闲置CPU基准；不以瞬时峰值直接宣称泄漏。

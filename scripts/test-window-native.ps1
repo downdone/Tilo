@@ -1,16 +1,16 @@
 param([ValidateSet('windows-debug', 'windows-release')][string]$Preset = 'windows-debug')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path $PSScriptRoot -Parent
-if (!(Test-Path "$env:DAYMARK_QT/bin/Qt6Core.dll")) { throw 'Set DAYMARK_QT to the Qt 6.10.2 MinGW kit directory.' }
-if (!(Test-Path "$env:DAYMARK_MINGW/bin/g++.exe")) { throw 'Set DAYMARK_MINGW to the matching MinGW directory.' }
+if (!(Test-Path "$env:TILO_QT/bin/Qt6Core.dll")) { throw 'Set TILO_QT to the Qt 6.10.2 MinGW kit directory.' }
+if (!(Test-Path "$env:TILO_MINGW/bin/g++.exe")) { throw 'Set TILO_MINGW to the matching MinGW directory.' }
 $testExecutable = Join-Path $projectRoot "build/$Preset/bin/test_widget_window.exe"
-$appExecutable = Join-Path $projectRoot "build/$Preset/bin/daymark.exe"
+$appExecutable = Join-Path $projectRoot "build/$Preset/bin/tilo.exe"
 if (!(Test-Path $testExecutable) -or !(Test-Path $appExecutable)) { throw 'Build this preset first.' }
 $reportPath = Join-Path $projectRoot "build/$Preset/native-widget.xml"
 $originalPath = $env:PATH
 $originalBackend = $env:QT_QPA_PLATFORM
 try {
-    $env:PATH = "$env:DAYMARK_MINGW/bin;$env:DAYMARK_QT/bin;$originalPath"
+    $env:PATH = "$env:TILO_MINGW/bin;$env:TILO_QT/bin;$originalPath"
     $env:QT_QPA_PLATFORM = 'windows'
     $testProcess = Start-Process -FilePath $testExecutable -ArgumentList @('-o', "`"$reportPath,junitxml`"") -WorkingDirectory $projectRoot -WindowStyle Hidden -Wait -PassThru
     if ($testProcess.ExitCode -ne 0) { throw "Native window tests failed; inspect $reportPath" }

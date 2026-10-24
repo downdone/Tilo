@@ -11,7 +11,7 @@
 #include <QThread>
 #include <QDebug>
 
-namespace daymark {
+namespace tilo {
 SoakRunner::SoakRunner(TaskWorkspace& workspace,WidgetViewModel& widget,QWindow* mainWindow,
                        int seconds,QString report,std::function<bool()> warnings,QObject* parent)
     :QObject(parent),m_workspace(workspace),m_widget(widget),m_main(mainWindow),m_seconds(seconds),

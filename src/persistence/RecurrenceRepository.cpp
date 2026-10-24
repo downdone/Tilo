@@ -2,7 +2,7 @@
 #include <QSqlQuery>
 #include <QUuid>
 #include <QVariant>
-namespace daymark {
+namespace tilo {
 Result<QList<RecurrenceRule>> RecurrenceRepository::all() const
 {
     QSqlQuery q(m_db);

@@ -1,6 +1,6 @@
 # Windows V1候选版需求审计
 
-本表区分实现覆盖和发布验收，最终结果以[验证报告](verification-report.md)为准。候选范围由用户明确限定为Windows；不改变PRD的双平台正式V1标准。
+本表区分实现覆盖和发布验收，最终结果以[进度](PROGRESS.md)与[平台矩阵](platform-test-matrix.md)为准。候选范围由用户明确限定为Windows；不改变PRD的双平台正式V1标准。
 
 | 需求 | 实现与本轮补齐 | 验证关注 |
 |---|---|---|

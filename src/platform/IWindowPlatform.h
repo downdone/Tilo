@@ -4,7 +4,7 @@
 
 class QWindow;
 
-namespace daymark {
+namespace tilo {
 
 enum class WindowError { None, WindowUnavailable, OperationRejected, MoveUnsupported };
 
@@ -25,4 +25,4 @@ public:
     virtual WindowResult startResize(QWindow*) {return {WindowError::OperationRejected};}
 };
 
-} // namespace daymark
+} // namespace tilo

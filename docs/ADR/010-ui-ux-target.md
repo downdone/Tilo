@@ -8,7 +8,7 @@ BASIC-01已形成可用任务闭环，但以默认控件为主，导航、行操
 
 ## 决策
 
-采用 [UI/UX基准](../design/ui-baseline.md) 及 [验收](../design/ui-acceptance.md) 作为后续界面设计与评审入口；研究事实、来源年代与独立解释见 [调研](../design/ui-research.md)。以内容优先、渐进呈现、直接操作、恢复能力和平台熟悉感为目标，数值token由Daymark自行定义并验证。
+采用 [UI/UX基准](../design/ui-baseline.md) 及 [验收](../design/ui-acceptance.md) 作为后续界面设计与评审入口；研究事实、来源年代与独立解释见 [调研](../design/ui-research.md)。以内容优先、渐进呈现、直接操作、恢复能力和平台熟悉感为目标，数值token由Tilo自行定义并验证。
 
 复用当前C++服务/数据边界，按Today样板→导航→详情→复杂列表→日历/组件逐批迁移。原PRD业务语义和范围不变；设计目标不是现有UI已验收声明。
 

@@ -1,7 +1,7 @@
-# Daymark 技术架构与详细设计（TDD）
+# Tilo 技术架构与详细设计（TDD）
 
 > 版本：1.0 · 与 `01_PRODUCT_SPEC.md` 同时适用。  
-> 要求：Codex 应先阅读 PRD，再按本文件建立架构。  
+> 要求：先阅读 PRD，再按本文件建立架构。  
 > 技术基线：C++20 + Qt 6.8+ + Qt Quick/QML + Qt Sql/SQLite + Qt Test + CMake；不引入网络服务作为必需依赖。
 
 ## 1. 架构约束与 ADR
@@ -79,7 +79,7 @@
 ### 2.1 建议目录结构
 
 ```text
-daymark/
+tilo/
 ├── AGENTS.md
 ├── README.md
 ├── CMakeLists.txt
@@ -334,7 +334,7 @@ struct Task {
 
 struct TaskPatch {
     // 三态 patch：未指定 / 清空 / 赋值，区别于 std::optional<T>
-    // Codex 自行实现 FieldPatch<T>，需附单元测试。
+    // FieldPatch<T> 由实现方自行实现，需附单元测试。
 };
 
 struct QueryContext {
@@ -523,7 +523,7 @@ QSettings 记录：`widgetMode`, `clickThrough`, `alwaysOnTop`, `locked`, `opaci
 
 - 推荐 `QApplication` + `QQmlApplicationEngine` + `QSystemTrayIcon`；`setQuitOnLastWindowClosed(false)`，托盘行为在 Qt Widget 模块完成。
 - 单实例使用 QLockFile 阻止双 writer、QLocalServer/QLocalSocket 发送 `activate` 消息使原进程显示主窗口；应处理崩溃残留锁（QLockFile stale lock）和服务端未初始化竞态。
-- 用户点击“退出 Daymark”时保存设置、等待数据库任务队列清空后释放句柄退出。
+- 用户点击“退出 Tilo”时保存设置、等待数据库任务队列清空后释放句柄退出。
 
 ---
 

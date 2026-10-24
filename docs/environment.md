@@ -1,17 +1,17 @@
 # 环境与可复现构建
 
-## 本轮识别
+## 已验证工具链
 
-2026-10-22：Windows11专业版x64，系统版本10.0.26300；Qt6.10.2 mingw_64；匹配MinGW GCC13.1.0；CMake3.29.2；Ninja1.12.0。Kit包含Quick/Controls/Sql/Test。macOS工具链未在本机验证。
+Windows x64：Qt 6.10.2 `mingw_64`，配套 MinGW GCC 13.1.0，CMake ≥ 3.24，Ninja 1.12。Qt Kit 须包含 Quick、QuickControls2、Sql、Test。macOS 工具链尚未在实机验证（UNVERIFIED）。
 
-本机路径不进入共享预设；通过当前Shell变量或忽略的CMakeUserPresets.json保存。禁止把Strawberry附带g++与Qt Kit混用。
+本机路径不进入共享预设；通过当前 Shell 变量或忽略的 `CMakeUserPresets.json` 保存。禁止把其他发行版附带的 g++ 与 Qt Kit 混用。
 
 ## Windows（PowerShell）
 
 ```powershell
 # 替换为本机Qt和配套编译器目录，不能仅指向Qt根目录。
-$env:DAYMARK_QT = '<Qt根目录>/6.10.2/mingw_64'
-$env:DAYMARK_MINGW = '<Qt根目录>/Tools/mingw1310_64'
+$env:TILO_QT = '<Qt根目录>/6.10.2/mingw_64'
+$env:TILO_MINGW = '<Qt根目录>/Tools/mingw1310_64'
 ./scripts/build-windows.ps1
 ./scripts/test-windows.ps1
 ./scripts/run-windows.ps1
@@ -29,10 +29,10 @@ CMake>=3.24、Ninja须在PATH。预设在子进程环境前置匹配编译器和
 ## macOS（bash，UNVERIFIED）
 
 ```bash
-export DAYMARK_QT='<Qt安装目录>/6.10.2/macos'
+export TILO_QT='<Qt安装目录>/6.10.2/macos'
 bash scripts/build-macos.sh macos-debug
 bash scripts/build-macos.sh macos-release
-./build/macos-debug/bin/daymark.app/Contents/MacOS/daymark
+./build/macos-debug/bin/tilo.app/Contents/MacOS/tilo
 ```
 
 要求Xcode/Apple Clang、CMake>=3.24、Ninja及对应架构Qt；Intel/Apple Silicon分别验证，最低macOS13。发布仍需macdeployqt及签名/公证核查。
@@ -45,14 +45,14 @@ Windows构建测试/交付脚本使用PowerShell 7（pwsh）；CTest额外执行
 - qml_startup使用offscreen及QTemporaryDir真实文件库，加载模块、等待worker就绪，并通过实际QML输入/详情信号执行新增→非法日期拒绝保留草稿→编辑→完成/恢复→软删撤销→未保存离开保护；检查两窗口且无QML警告，不写真实用户库。
 - CTest使用noTestsAction=error；零测试不能冒充通过。日志在对应build目录Testing/Temporary，原始日志含本机路径，不提交。
 - 配置提示缺少WrapVulkanHeaders，但默认路径本轮构建通过；Vulkan后端未验证。
-- moc输出许可客户端期望服务版本3.6.1、安装服务不匹配。本轮编译及测试仍成功；未修改许可配置或启用绕过变量。发布前核实Kit许可来源及服务状态。
+- 开发机上 Qt 工具可能输出与本机许可服务相关的非阻断诊断；编译与测试仍成功。未修改许可配置，也未启用绕过变量。发布前须核实 Kit 许可来源与服务状态。
 - QML加载失败：正常启动显示错误对话框；自动smoke返回失败，避免模态弹窗挂住测试。
 
 ## W-01窗口验证
 
 新增widget_window Qt Test，默认offscreen；测试隐藏/显示状态、模式往返尺寸位置、取消置顶、失败回滚和销毁安全。原生脚本显式使用windows后端运行同一测试与启动smoke，输出JUnit XML到对应build目录；测试无业务DB访问，不包含实际鼠标拖动、焦点或桌面窗口遮挡验证。
 
-QML静态检查：`cmake --build --preset windows-debug --target daymark_qmllint`。它检查QML类型和属性，不验证视觉布局。
+QML静态检查：`cmake --build --preset windows-debug --target tilo_qmllint`。它检查QML类型和属性，不验证视觉布局。
 
 ## 基础任务验证
 

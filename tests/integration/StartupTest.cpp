@@ -2,7 +2,7 @@
 #include <QTemporaryDir>
 #include <QFile>
 #include <QtTest>
-using namespace daymark;
+using namespace tilo;
 class StartupTest:public QObject {
     Q_OBJECT
 private slots:
@@ -11,7 +11,7 @@ private slots:
         QSettings settings(path,QSettings::IniFormat);settings.setValue(QStringLiteral("OtherApp"),QStringLiteral("other"));settings.sync();
         StartupController startup(path);QVERIFY(startup.supported());QVERIFY(!startup.enabled());
         QVERIFY(startup.setEnabled(true));QVERIFY(startup.enabled());
-        settings.sync();const auto command=settings.value(QStringLiteral("Daymark")).toString();
+        settings.sync();const auto command=settings.value(QStringLiteral("Tilo")).toString();
         QVERIFY(command.startsWith(QLatin1Char('"')) && command.endsWith(QLatin1Char('"')));
         QVERIFY(startup.setEnabled(false));QVERIFY(!startup.enabled());
         settings.sync();QCOMPARE(settings.value(QStringLiteral("OtherApp")).toString(),QStringLiteral("other"));

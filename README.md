@@ -1,29 +1,62 @@
-# Daymark
+# Tilo
 
-Windows/macOS离线任务管理与日历应用，C++20 + **Qt 6.10.2 / Qt Quick** + SQLite。
+离线优先的跨平台任务管理与日历桌面应用。C++20 + Qt 6.10.2 / Qt Quick + SQLite，Windows 与 macOS。
 
-当前工程为 **1.0.0-rc.2 Windows V1候选版**：在离线任务、组织、重复提醒、桌面组件、批量操作及数据保护基础上，新增任务议程、本地全天/定时事件、准备/跟进任务关联。范围与升级见[RC2说明](docs/release-notes-v1-rc2.md)、[需求审计](docs/v1-feature-matrix.md)；本地包与校验和见[进度](docs/PROGRESS.md)。
+无账号、无云端、无遥测；所有核心操作在断网时可用，数据保存在本机。
 
-用户已确认暂缺macOS环境，先交付本地Windows候选版本，未推送GitHub。macOS、真实OS穿透/多屏/层级/焦点和8h稳定性保持UNVERIFIED，UI目标仍需完整体验验收。操作说明见[使用指南](docs/user-guide.md)、[候选版说明](docs/release-notes-v1-rc.md)；[v0.1记录](docs/release-notes-v0.1.md)保留历史范围。
+## 功能
 
-UI-07统一了主窗、详情、管理弹窗、日历与桌面组件的字体、间距、图标、控件和动作层级。规范见[视觉统一](docs/design/visual-unification.md)，本地预览包与实际验证见[进度](docs/PROGRESS.md)。
+- **收集与规划**：收集箱、今天、即将到来、随时可做、以后再说、已完成六视图；持续关注今天、今晚分组、独立的列表排序。
+- **组织**：领域、项目、分组（Heading）、标签、检查清单；项目与领域互斥归属，删除项目保留任务。
+- **日历**：月/周视图与当天议程，任务开始/截止标记合并与拆分，跨日连续日程色条，独立桌面日历窗口。
+- **事件**：本地全天或定时事件、循环规则、提醒；事件与任务多对多关联。
+- **重复**：按天/周/月/年在指定星期、日序或固定月日重复，完成后 N 天；幂等实例与手改保护。
+- **提醒**：任务与事件提醒，应用内提醒中心与系统通知，持久化去重。
+- **桌面组件**：透明浮窗与 Mini 模式、置顶、锁定、鼠标穿透（可经托盘或设置恢复）。
+- **数据保护**：WAL 一致快照备份、JSON/CSV 导出、验证预览后的事务导入、软删与撤销。
+- **界面**：浅/深/跟随系统主题、100%–200% 文字、增强对比度、完整键盘通路；设计依据 Apple HIG，实现与资源均为本项目独创。
 
-## 开始开发
+## 构建
 
-1. 阅读 [AGENTS.md](AGENTS.md)、[文档导航](docs/README.md)、[当前进度](docs/PROGRESS.md)。
-2. 按 [环境与构建](docs/environment.md) 设置DAYMARK_QT及Windows的DAYMARK_MINGW。
-3. Windows运行 `./scripts/build-windows.ps1`、`./scripts/test-windows.ps1`、`./scripts/run-windows.ps1`。
-4. macOS运行 `bash scripts/build-macos.sh`；当前未验证该平台。
-5. Windows Release构建测试后，`./scripts/package-windows.ps1`生成带运行库的本地验证包并在不含SDK的PATH下验证。公开再分发许可见[第三方说明](docs/third-party-notices.md)。
+前置：CMake ≥ 3.24、Ninja、Qt 6.10.2（含 Quick、QuickControls2、Sql、Test）。
 
-## 项目资料
+```bash
+# Windows（PowerShell 7）
+$env:TILO_QT = '<Qt根目录>/6.10.2/mingw_64'
+$env:TILO_MINGW = '<Qt根目录>/Tools/mingw1310_64'
+./scripts/build-windows.ps1              # 或 -Preset windows-release
+./scripts/test-windows.ps1
 
-- [产品规格](docs/01_PRODUCT_SPEC.md)、[技术基线](docs/02_TECHNICAL_DESIGN.md)、[原始计划](docs/03_IMPLEMENTATION_PLAN.md)。
-- [AI开发方法](docs/engineering.md)、[工程原则](docs/principles.md)。
-- [详细设计](docs/design/architecture.md)、[模块契约](docs/design/contracts.md)、[界面设计](docs/design/ui.md)。
-- UI目标：[Things/Apple调研](docs/design/ui-research.md)、[UI/UX设计基准](docs/design/ui-baseline.md)、[UX验收](docs/design/ui-acceptance.md)。
-- [里程碑任务](docs/milestones.md)、[验证报告](docs/verification-report.md)、[平台矩阵](docs/platform-test-matrix.md)。
+# macOS
+export TILO_QT='<Qt安装目录>/6.10.2/macos'
+bash scripts/build-macos.sh macos-debug
+```
 
-顺序：M0窗口POC → M1可靠基础 → M2数据闭环 → M3主窗 → M4日历 → M5桌面MVP → M6重复提醒 → M7备份/稳定性/双平台发布。工程基线不等于M0/M1整体完成。
+也可直接使用 CMake 预设：`cmake --preset windows-debug`、`cmake --build --preset windows-debug`、`ctest --preset windows-debug`。
 
-V1无账号、云端或AI功能依赖，核心操作离线可用。Things仅为交互原则参考，不复制资产；Daymark是暂定代号，公开发布前核实名称与许可。
+详细环境、脚本与诊断说明见[环境与构建](docs/environment.md)。
+
+## 测试
+
+17 个 CTest 目标覆盖 SQLite 运行时、任务/目录/日历/事件/重复/提醒服务、数据导入导出、性能、单实例、窗口状态与 QML 启动流程。全部自动测试使用 `QTemporaryDir`，不接触用户数据库。
+
+```bash
+ctest --preset windows-debug
+cmake --build --preset windows-debug --target tilo_qmllint
+python scripts/check-ui-colors.py
+```
+
+## 文档
+
+- [文档导航](docs/README.md)、[当前进度](docs/PROGRESS.md)、[里程碑](docs/milestones.md)
+- [产品规格](docs/01_PRODUCT_SPEC.md)、[技术设计](docs/02_TECHNICAL_DESIGN.md)、[实施计划](docs/03_IMPLEMENTATION_PLAN.md)
+- [架构决策记录](docs/ADR/README.md)、[平台验证矩阵](docs/platform-test-matrix.md)
+- [使用说明](docs/user-guide.md)、[交付与校验](docs/delivery-guide.md)、[第三方组件](docs/third-party-notices.md)
+
+## 状态与边界
+
+Windows 已通过自动化测试与本机原生环境验证；**macOS 尚未在实机完成构建与人工验收**，相关项目在[平台矩阵](docs/platform-test-matrix.md)中保持 `UNVERIFIED`。真实系统通知送达、物理输入设备、读屏、多屏与 DPI 切换、8 小时连续运行与独立干净机部署同样需要人工验收，自动化测试不能替代。
+
+## 许可
+
+源码以 [MIT 许可](LICENSE)发布。运行时使用的 Qt 6.10.2 有独立许可条款，再分发前请阅读[第三方组件说明](docs/third-party-notices.md)。

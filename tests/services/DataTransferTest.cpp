@@ -7,7 +7,7 @@
 #include <QSettings>
 #include <QSqlQuery>
 #include <QtTest>
-using namespace daymark;
+using namespace tilo;
 class DataTransferTest:public QObject {
     Q_OBJECT
 private slots:

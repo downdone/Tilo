@@ -4,11 +4,11 @@ FR-002/007/014/018/019/021，UX-01/04/05/06/07/09/10/11。本轮从用户三张�
 
 ## HIG映射和取舍
 
-Apple [Pickers](https://developer.apple.com/design/human-interface-guidelines/pickers)允许日期/时间通过键盘和指针选择；[Pop-up buttons](https://developer.apple.com/design/human-interface-guidelines/pop-up-buttons)用于互斥选项；[Sheets](https://developer.apple.com/design/human-interface-guidelines/sheets)强调明确确认与取消。2026-10-24读取官方页面。Daymark采用直接选择、渐进呈现和用户控制，在Windows保留文本输入及Ctrl习惯，不复制触屏滚轮、专有图标或玻璃材质。
+Apple [Pickers](https://developer.apple.com/design/human-interface-guidelines/pickers)允许日期/时间通过键盘和指针选择；[Pop-up buttons](https://developer.apple.com/design/human-interface-guidelines/pop-up-buttons)用于互斥选项；[Sheets](https://developer.apple.com/design/human-interface-guidelines/sheets)强调明确确认与取消。2026-10-24读取官方页面。Tilo采用直接选择、渐进呈现和用户控制，在Windows保留文本输入及Ctrl习惯，不复制触屏滚轮、专有图标或玻璃材质。
 
 ## 全局规则与页面映射
 
-| 参考关系 | Daymark行为 | 覆盖范围 |
+| 参考关系 | Tilo行为 | 覆盖范围 |
 |---|---|---|
 | 点击任务先快速编辑 | 非模态紧凑编辑卡，标题、自然增长备注和计划日期；“完整详情”继续同一草稿；明确保存/关闭 | 主任务列表；日历/提醒/组件仍直接打开完整详情，避免小窗中套编辑层 |
 | 日期开关展开日历 | 计划开始/截止使用开关，开启填今天并展开同组日历，关闭清除该字段并收起空输入；开启后输入框仍可手输；选择后收起 | 任务详情；事件开始/结束为必需日期，只展开日历而不提供清除开关 |

@@ -20,7 +20,7 @@ function Read-PackageJson([string]$Path) {
     } finally {$document.Dispose()}
 }
 
-function Assert-DaymarkPackage([string]$PackageDirectory) {
+function Assert-TiloPackage([string]$PackageDirectory) {
     $root=(Get-Item -LiteralPath $PackageDirectory -Force).FullName
     if(![IO.Directory]::Exists($root)){throw 'Package directory required.'}
     # Walk without following reparse points, including ancestors of the package.
@@ -45,8 +45,8 @@ function Assert-DaymarkPackage([string]$PackageDirectory) {
     if($manifest.version -notmatch '^\d+\.\d+\.\d+(-rc\.\d+)?$' -or $manifest.version -cne $info.version -or
        $manifest.qt -cne '6.10.2' -or $info.qt -cne '6.10.2' -or $manifest.platform -cne 'windows-x64' -or
        $info.schemaVersion -ne 4 -or $info.sourceRevision -notmatch '^[a-f0-9]{40}$' -or
-       $info.signed -isnot [bool] -or $info.signed -or $manifest.scope -cne 'local verification' -or
-       $info.scope -cne 'Windows local release candidate'){throw 'Unsupported or inconsistent package metadata.'}
+       $info.signed -isnot [bool] -or $info.signed -or $manifest.scope -cne 'release' -or
+       $info.scope -cne 'Windows x64 release'){throw 'Unsupported or inconsistent package metadata.'}
     $seen=[Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
     foreach($entry in $manifest.files) {
         if($entry.path -isnot [string] -or !$entry.path -or $entry.path -match '(^/|\\|:|(^|/)\.{1,2}(/|$)|//|[ .](/|$))' -or
@@ -57,20 +57,20 @@ function Assert-DaymarkPackage([string]$PackageDirectory) {
            (Get-FileHash -LiteralPath $files[$entry.path].FullName -Algorithm SHA256).Hash -ine $entry.sha256){throw 'Package file integrity failed.'}
     }
     if($seen.Count -ne $files.Count-1){throw 'Unlisted file in package.'}
-    foreach($required in @('daymark.exe','BUILD-INFO.json','qt.conf','Qt6Core.dll','platforms/qwindows.dll','sqldrivers/qsqlite.dll',
+    foreach($required in @('tilo.exe','BUILD-INFO.json','qt.conf','Qt6Core.dll','platforms/qwindows.dll','sqldrivers/qsqlite.dll',
                             'docs/user-guide.md','docs/third-party-notices.md','verification/Test-Package.ps1','verification/PackageValidation.psm1')) {
         if(!$seen.Contains($required)){throw 'Required deployment file missing.'}
     }
     return @{root=$root;manifest=$manifest;info=$info;files=$files}
 }
 
-function Assert-DaymarkArchive([string]$ArchivePath,[string]$PackageDirectory) {
+function Assert-TiloArchive([string]$ArchivePath,[string]$PackageDirectory) {
     $archive=(Get-Item -LiteralPath $ArchivePath).FullName
     $expected=([IO.File]::ReadAllText($archive+'.sha256')).Trim()
     if($expected -notmatch '^([a-fA-F0-9]{64})  (.+)$' -or $Matches[2] -cne [IO.Path]::GetFileName($archive)){throw 'Invalid archive sidecar.'}
     $expectedHash=$Matches[1]
     if((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ine $expectedHash){throw 'Archive checksum failed.'}
-    $package=Assert-DaymarkPackage $PackageDirectory
+    $package=Assert-TiloPackage $PackageDirectory
     $prefix=[IO.Path]::GetFileName($package.root)+'/'
     $zip=[IO.Compression.ZipFile]::OpenRead($archive)
     try {
@@ -92,7 +92,7 @@ function Assert-DaymarkArchive([string]$ArchivePath,[string]$PackageDirectory) {
     return $expectedHash.ToLowerInvariant()
 }
 
-function Get-DaymarkRuntimeOrigin([string]$ModuleName,[string]$ModulePath,[string]$PackageRoot,[string]$WindowsRoot) {
+function Get-TiloRuntimeOrigin([string]$ModuleName,[string]$ModulePath,[string]$PackageRoot,[string]$WindowsRoot) {
     $path=[IO.Path]::GetFullPath($ModulePath)
     if([IO.Path]::GetFileName($path) -ine $ModuleName){throw 'Module name and path disagree.'}
     $prefix=[IO.Path]::GetFullPath($PackageRoot).TrimEnd([IO.Path]::DirectorySeparatorChar)+[IO.Path]::DirectorySeparatorChar
@@ -103,4 +103,4 @@ function Get-DaymarkRuntimeOrigin([string]$ModuleName,[string]$ModulePath,[strin
     throw ('Runtime DLL outside permitted locations: '+$ModuleName)
 }
 
-Export-ModuleMember -Function Assert-DaymarkPackage,Assert-DaymarkArchive,Get-DaymarkRuntimeOrigin
+Export-ModuleMember -Function Assert-TiloPackage,Assert-TiloArchive,Get-TiloRuntimeOrigin

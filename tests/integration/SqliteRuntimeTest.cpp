@@ -12,7 +12,7 @@ private slots:
     {
         QTemporaryDir directory;
         QVERIFY(directory.isValid());
-        const auto connectionName = QStringLiteral("daymark-runtime-test");
+        const auto connectionName = QStringLiteral("tilo-runtime-test");
         {
             auto db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName);
             db.setDatabaseName(directory.filePath(QStringLiteral("runtime.sqlite")));

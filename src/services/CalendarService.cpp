@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <QHash>
 
-namespace daymark {
+namespace tilo {
 namespace {
 bool eligible(const Task& task,bool includeCompleted) {
     if(QueryService::effectiveActive(task))return true;

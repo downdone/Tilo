@@ -14,3 +14,5 @@ ADR-001～006 已记录在 [原始 TDD](../02_TECHNICAL_DESIGN.md)，继续有�
 | [013](013-local-events.md) | 本地事件、任务议程、schema003及关系/时区边界 | 已接受：用户授权CAL-01/02 |
 
 | [014](014-event-series.md) | 事件系列、当地时间投影、schema004与提醒去重 | 已接受：用户授权CAL-04 |
+
+| [015](015-project-rename-tilo.md) | 全面更名为 Tilo；新数据目录与全新数据库，不迁移旧库 | 已接受：用户要求改名 |

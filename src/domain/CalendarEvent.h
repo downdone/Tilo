@@ -1,7 +1,7 @@
 #pragma once
 #include "Task.h"
 #include <QTimeZone>
-namespace daymark {
+namespace tilo {
 struct EventLink {QString taskId,role=QStringLiteral("preparation");};
 struct CalendarEvent {
     QString id,title,notes,timeZone;

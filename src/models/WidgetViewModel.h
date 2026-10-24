@@ -10,7 +10,7 @@
 #include <QTimer>
 #include <memory>
 
-namespace daymark {
+namespace tilo {
 
 class WidgetViewModel final : public QObject {
     Q_OBJECT
@@ -77,4 +77,4 @@ private:
     QTimer m_saveTimer;
 };
 
-} // namespace daymark
+} // namespace tilo

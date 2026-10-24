@@ -1,8 +1,8 @@
-# Daymark图标
+# Tilo图标
 
-Daymark原创日历勾选标识，与源码一并维护；项目尚未指定开源许可，不在此另授第三方许可。不含Things、Apple或其他产品资产。
+Tilo原创日历勾选标识，与源码一并维护；项目尚未指定开源许可，不在此另授第三方许可。不含Things、Apple或其他产品资产。
 
-`daymark.svg`为矢量母版；PNG/ICO/ICNS与母版几何一致，由仓库脚本生成。
+`tilo.svg`为矢量母版；PNG/ICO/ICNS与母版几何一致，由仓库脚本生成。
 
 Windows/PowerShell 7重建：`./scripts/generate-app-icons.ps1`，使用系统Drawing API，无额外依赖。macOS直接构建已提交资源，无须运行此脚本；ICNS实际Finder/Dock验收保持UNVERIFIED。
 

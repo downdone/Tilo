@@ -1,6 +1,6 @@
 #include "RecurrenceService.h"
 #include <QSet>
-namespace daymark {
+namespace tilo {
 bool RecurrenceService::occursOn(const RecurrenceRule& r,const QDate& d)
 {
     if(!d.isValid() || !r.anchor.isValid() || r.interval<1 || d<r.anchor || (r.end.isValid() && d>r.end))return false;

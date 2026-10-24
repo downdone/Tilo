@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QTimer>
 
-namespace daymark {
+namespace tilo {
 class SystemEventFilter final:public QObject,public QAbstractNativeEventFilter {
 public:
     explicit SystemEventFilter(std::function<void()> refresh);

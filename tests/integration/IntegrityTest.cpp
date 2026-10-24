@@ -2,7 +2,7 @@
 #include <QSqlQuery>
 #include <QTemporaryDir>
 #include <QtTest>
-using namespace daymark;
+using namespace tilo;
 class IntegrityTest:public QObject {
     Q_OBJECT
 private slots:

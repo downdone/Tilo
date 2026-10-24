@@ -5,20 +5,20 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-using namespace daymark;
+using namespace tilo;
 class SingleInstanceTest : public QObject {
     Q_OBJECT
 private slots:
     void secondProcessActivatesWithoutBecomingWriter()
     {
-        QTemporaryDir dir(QDir::tempPath()+QStringLiteral("/daymark instance-XXXXXX"));QVERIFY(dir.isValid());
+        QTemporaryDir dir(QDir::tempPath()+QStringLiteral("/tilo instance-XXXXXX"));QVERIFY(dir.isValid());
         SingleInstance primary;QCOMPARE(primary.acquire(dir.path()),SingleInstance::Outcome::Primary);
         QSignalSpy activated(&primary,&SingleInstance::activationRequested);
         QProcess child;child.start(QCoreApplication::applicationFilePath(),{QStringLiteral("--instance-child"),dir.path()});
         QVERIFY(child.waitForStarted());
         QTRY_COMPARE_WITH_TIMEOUT(child.state(),QProcess::NotRunning,10000);
         QCOMPARE(child.exitCode(),0);QCOMPARE(activated.count(),1);
-        QVERIFY(!QFileInfo::exists(dir.filePath(QStringLiteral("daymark.sqlite"))));
+        QVERIFY(!QFileInfo::exists(dir.filePath(QStringLiteral("tilo.sqlite"))));
     }
 };
 int main(int argc,char** argv)

@@ -1,7 +1,7 @@
 #include "EventRepository.h"
 #include <QSqlQuery>
 #include <QUuid>
-namespace daymark {
+namespace tilo {
 Result<QList<CalendarEvent>> EventRepository::all() const
 {
     QSqlQuery q(m_db);

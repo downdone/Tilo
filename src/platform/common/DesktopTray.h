@@ -4,7 +4,7 @@
 #include <QPointer>
 #include <QSystemTrayIcon>
 
-namespace daymark {
+namespace tilo {
 class DesktopTray final : public QObject {
     Q_OBJECT
 public:

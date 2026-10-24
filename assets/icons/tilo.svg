@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <title>Daymark</title>
+  <title>Tilo</title>
   <rect x="8" y="8" width="240" height="240" rx="56" fill="#315db5"/>
   <rect x="52" y="61" width="152" height="151" rx="24" fill="#fff"/>
   <path d="M52 102H204" stroke="#315db5" stroke-width="12"/>

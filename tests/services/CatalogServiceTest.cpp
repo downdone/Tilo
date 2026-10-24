@@ -4,7 +4,7 @@
 #include <QTemporaryDir>
 #include <QSqlQuery>
 #include <QtTest>
-using namespace daymark;
+using namespace tilo;
 class CatalogServiceTest:public QObject {
     Q_OBJECT
 private slots:

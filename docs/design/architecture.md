@@ -4,7 +4,7 @@
 
 ## 1. 已实现与计划边界
 
-已实现：CMake、QApplication、AppRuntime、Daymark QML模块、主窗口及独立组件；W-01的窗口控制，以及BASIC-01的初始schema、单实例、worker线程、任务CRUD/软删恢复、六个统一视图、搜索、同源今日组件和手动一致快照。窗口设置持久化、托盘/穿透和完整项目组织尚未实现。
+已实现：CMake、QApplication、AppRuntime、Tilo QML模块、主窗口及独立组件；W-01的窗口控制，以及BASIC-01的初始schema、单实例、worker线程、任务CRUD/软删恢复、六个统一视图、搜索、同源今日组件和手动一致快照。窗口设置持久化、托盘/穿透和完整项目组织尚未实现。
 
 当前基础切片详见 [BASIC-01](basic-tasks.md)，明确的实施选择见 [ADR-009](../ADR/009-basic-task-slice.md)。以下目标架构只有上述已落地部分属于完成范围。
 

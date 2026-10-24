@@ -4,7 +4,7 @@
 #include <QSqlQuery>
 #include <QTemporaryDir>
 #include <QtTest>
-using namespace daymark;
+using namespace tilo;
 class PerformanceTest:public QObject {
     Q_OBJECT
 private slots:

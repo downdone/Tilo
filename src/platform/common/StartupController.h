@@ -4,7 +4,7 @@
 #include <QtQml/qqmlregistration.h>
 #include <memory>
 
-namespace daymark {
+namespace tilo {
 class StartupController:public QObject {
     Q_OBJECT
     QML_ELEMENT

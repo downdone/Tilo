@@ -1,10 +1,10 @@
 # Things 3与Apple UI/UX调研
 
-调研日期：2026-10-22。对象：Things for Mac为主，Apple桌面HIG为原则参考；移动端交互仅用于解释，不直接搬到Windows。产出是Daymark设计依据，不是Things客户端体验测试或像素复刻报告。
+调研日期：2026-10-22。对象：Things for Mac为主，Apple桌面HIG为原则参考；移动端交互仅用于解释，不直接搬到Windows。产出是Tilo设计依据，不是Things客户端体验测试或像素复刻报告。
 
 ## 1. 方法与证据边界
 
-只使用Cultured Code和Apple公开官方资料，未登录、安装或抓取商业软件数据，未提取图标、字体、动画或二进制资源。官方截图仅保留来源链接，不进入产品资源包。本轮阅读官网和支持文章；没有以实际Things客户端测量字号、间距或操作耗时。下文区分“来源事实”“设计解释”和“Daymark决策”。
+只使用Cultured Code和Apple公开官方资料，未登录、安装或抓取商业软件数据，未提取图标、字体、动画或二进制资源。官方截图仅保留来源链接，不进入产品资源包。本轮阅读官网和支持文章；没有以实际Things客户端测量字号、间距或操作耗时。下文区分“来源事实”“设计解释”和“Tilo决策”。
 
 Things Features页明确说明主体功能介绍来自3.0，并另外链接后续更新，因此不能将2017截图等同于当前所有版本。侧栏、搜索以现行支持页补充，字号能力以2023年3.18官方文章补充。没有证据的行为不推断为Things现状。
 
@@ -12,7 +12,7 @@ Apple当前HIG已包含Liquid Glass，设计原则页标注2026-06-08重新引�
 
 ## 2. Things：可借鉴的设计机制
 
-| 来源事实 | 设计解释（本项目判断） | Daymark采用方式 |
+| 来源事实 | 设计解释（本项目判断） | Tilo采用方式 |
 |---|---|---|
 | 任务可展开为编辑区域，附加字段按需出现 [T1] | 阅读任务与编辑属性有不同信息密度 | 默认突出标题；选中后展示详情，日期/标签/清单渐进呈现 |
 | Today与Evening分组，Upcoming按未来安排组织 [T1] | 以执行时机建立层次 | 用今日/今晚和日期标题组织内容，筛选仍遵守PRD |
@@ -20,18 +20,18 @@ Apple当前HIG已包含Liquid Glass，设计原则页标注2026-06-08重新引�
 | Quick Find同时承担搜索与导航，继续搜索扩展范围 [T2] | 搜索能成为跨位置入口 | 明确区分全局/当前范围，先保持可靠的标题备注搜索 |
 | Jump Start集中常用排期选项 [T1] | 高频日期决策应少跳转 | 提供“今天/明天/选择日期/清除”，开始与截止独立 |
 | Slim Mode隐藏侧栏，仍能导航 [T3] | 减少干扰必须保留回路 | 未来可折叠侧栏；隐藏后保留显式导航按钮和键盘入口 |
-| Mac提供丰富键盘命令 [T4] | 高效操作不依赖鼠标 | 实现Daymark自身快捷键契约，不照搬Things键位 |
+| Mac提供丰富键盘命令 [T4] | 高效操作不依赖鼠标 | 实现Tilo自身快捷键契约，不照搬Things键位 |
 | 3.18支持调整文字，图标和布局共同缩放 [T5] | 可读性是系统性布局问题 | 用语义字体、可伸缩行高和矢量图标，不仅放大字 |
 
-T1为功能机制来源；“设计解释”和所有Daymark落地为独立判断，并非Cultured Code建议。
+T1为功能机制来源；“设计解释”和所有Tilo落地为独立判断，并非Cultured Code建议。
 
 公开视觉参考：[Today旧版Mac示例](https://static.culturedcode.com/things/videos/2017-05-18-website-videos/2-today-mac.png)、[Heading旧版示例](https://static.culturedcode.com/things/videos/2017-05-18-website-videos/4-headings-mac.png)、[Quick Find旧版示例](https://static.culturedcode.com/things/videos/2017-05-18-website-videos/7-quickfind-mac.png)、[2023 Mac默认字号示例](https://culturedcode.com/frozen/2023/09/things-mac-text-size-100-io60.jpg)。只作历史参考，不声称测得精确token。
 
-## 3. Apple：原则到Daymark的映射
+## 3. Apple：原则到Tilo的映射
 
-Apple现行Design principles列出Purpose、Agency、Responsibility、Familiarity、Flexibility、Simplicity、Craft、Delight八项 [A1]。以下中文落地由Daymark定义，不是官方逐字翻译：
+Apple现行Design principles列出Purpose、Agency、Responsibility、Familiarity、Flexibility、Simplicity、Craft、Delight八项 [A1]。以下中文落地由Tilo定义，不是官方逐字翻译：
 
-| 原则 | Daymark目标 | 设计评审问题 |
+| 原则 | Tilo目标 | 设计评审问题 |
 |---|---|---|
 | Purpose / 目的 | 帮助收集、安排和执行任务 | 每个常驻控件是否服务高频主任务？ |
 | Agency / 自主 | 易撤销，可退出编辑、筛选及穿透 | 用户能否找回上下文与未保存内容？ |
@@ -46,13 +46,13 @@ Apple现行Design principles列出Purpose、Agency、Responsibility、Familiarit
 
 ## 4. 不直接迁移的内容
 
-- Things的外部日历事件、云、自然语言、全局快速录入、多主窗口或移动Magic Plus不因调研进入V1。Daymark保留月/周任务日历和单实例悬浮窗自身价值。
-- Things的Quick Find分层搜索与Daymark当前全局标题/备注搜索并不相同；不为相似外观偷改PRD搜索范围。Things快捷键导航编号也与PRD不同，以Daymark契约为准。
-- Apple最新材料指导包含原生系统材质。Qt Quick 6.10.2、Windows10/11和macOS13+不能据此承诺同样效果；Daymark先用可读的不透明表面和细边界。玻璃/模糊是能力允许时的可选增强，不成为UI合格条件。
+- Things的外部日历事件、云、自然语言、全局快速录入、多主窗口或移动Magic Plus不因调研进入V1。Tilo保留月/周任务日历和单实例悬浮窗自身价值。
+- Things的Quick Find分层搜索与Tilo当前全局标题/备注搜索并不相同；不为相似外观偷改PRD搜索范围。Things快捷键导航编号也与PRD不同，以Tilo契约为准。
+- Apple最新材料指导包含原生系统材质。Qt Quick 6.10.2、Windows10/11和macOS13+不能据此承诺同样效果；Tilo先用可读的不透明表面和细边界。玻璃/模糊是能力允许时的可选增强，不成为UI合格条件。
 - Apple字体和SF Symbols不作为可随意跨平台打包的资源。优先系统字体回退、自绘独立图标或许可明确资产；引入外部图标库先按仓库依赖政策写ADR。
 - 本次不把旧版“清晰、服从、深度”等概括当作现行HIG完整原则清单；用[A1]的当前分类，并在产品中落实为可验证规则。
 
-## 5. 对现有Daymark的差距判断
+## 5. 对现有Tilo的差距判断
 
 依据当前Main.qml、WidgetWindow.qml和BASIC-01合成截图，属于本项目审查结论：
 
@@ -98,4 +98,4 @@ Apple现行Design principles列出Purpose、Agency、Responsibility、Familiarit
 
 ## UI-15官方依据复核（2026-10-24）
 
-[Apple Buttons](https://developer.apple.com/design/human-interface-guidelines/buttons)强调动作可辨识、合适命中区域及交互状态；[Icons](https://developer.apple.com/design/human-interface-guidelines/icons)强调熟悉含义和统一图形语言；[Color](https://developer.apple.com/design/human-interface-guidelines/color)要求语义一致并适配浅深/增强对比度。动态网页以官方同域.md正文读取。Daymark的按钮三分类、32DIP起命中、原创线性图标与具体配色是本项目的平台设计决定，不能写成Apple规定值，也不作视觉/辅助技术认证。落实见[动作与配色](actions-and-color.md)。
+[Apple Buttons](https://developer.apple.com/design/human-interface-guidelines/buttons)强调动作可辨识、合适命中区域及交互状态；[Icons](https://developer.apple.com/design/human-interface-guidelines/icons)强调熟悉含义和统一图形语言；[Color](https://developer.apple.com/design/human-interface-guidelines/color)要求语义一致并适配浅深/增强对比度。动态网页以官方同域.md正文读取。Tilo的按钮三分类、32DIP起命中、原创线性图标与具体配色是本项目的平台设计决定，不能写成Apple规定值，也不作视觉/辅助技术认证。落实见[动作与配色](actions-and-color.md)。

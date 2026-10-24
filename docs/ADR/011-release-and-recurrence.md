@@ -2,12 +2,12 @@
 
 状态：实施。日期：2026-10-22。
 
-用户先要求核心能力和v0.1发布；随后明确“先交付本地版本”，本轮只交付本地Windows包和源码，不推送或创建GitHub Release。macOS、签名、8h稳定性及真实跨屏/穿透保留UNVERIFIED，不通过版本号或offscreen测试冒充验收。
+用户先要求核心能力和 v0.1 发布，期间一度限定为“先交付本地版本”；V1.0 发布阶段已授权把源码提交到公开仓库并发布版本。仓库托管不改变验收口径：macOS、签名、8h 稳定性及真实跨屏/穿透仍保留 UNVERIFIED，不通过版本号或 offscreen 测试冒充验收。
 
 固定重复规则的occurrence_on等于生成时计划日；用户改start_on不改此身份。“完成后N天”若同一天提前完成多次，多个周期有相同的下一计划日，而唯一键禁止相同模板/周期日重复。因此start_on始终是完成时本地日期+N；occurrence_on作为稳定周期标识，在碰撞时取该模板既有最高周期日+1。重启不重建已有身份；同时最多保留一个开放实例，恢复旧完成实例时若已有开放后继则拒绝。其余固定规则不使用该推进方式。测试覆盖提前完成两次、幂等、后继唯一和日期正确。
 
 UI保留显式保存与草稿保护（ADR-009）；UI/UX基准继续作为目标，不把首个本地版当作所有UX验收已通过。当前新增Qt内置组件，无应用运行时第三方依赖。
 
-预备CI使用actions/checkout v4（MIT）与install-qt-action v4（MIT），均固定到已核对的提交；只用于安装指定Qt和双平台构建。可替代方案为用户自备Qt运行已有原生脚本。依据：[安装Action](https://github.com/jurplel/install-qt-action)、[Qt 6.10部署文档](https://doc.qt.io/qt-6.10/deployment.html)。当前未推送、未运行CI，不标远程平台PASS。
+预备CI使用actions/checkout v4（MIT）与install-qt-action v4（MIT），均固定到已核对的提交；只用于安装指定Qt和双平台构建。可替代方案为用户自备Qt运行已有原生脚本。依据：[安装Action](https://github.com/jurplel/install-qt-action)、[Qt 6.10部署文档](https://doc.qt.io/qt-6.10/deployment.html)。CI 配置随源码发布，但其结果只有在对应平台上实际运行后才可记为 PASS。
 
-本机Qt工具仍输出许可服务版本诊断；不绕过许可检查，不修改系统许可配置。本地包可供当前机器验证，公开再分发前必须单独确认Qt运行库许可及第三方声明；本轮不宣称商业SDK的再分发授权已核实。
+开发机上的 Qt 工具可能输出许可服务相关诊断；不绕过许可检查，也不修改系统许可配置。公开再分发前必须单独确认 Qt 运行库许可及第三方声明，见[第三方记录](../third-party-notices.md)。

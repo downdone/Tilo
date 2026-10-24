@@ -1,7 +1,7 @@
 #pragma once
 #include "persistence/RecurrenceRepository.h"
 #include "persistence/TaskRepository.h"
-namespace daymark {
+namespace tilo {
 class RecurrenceService final {
 public:
     RecurrenceService(RecurrenceRepository& rules,TaskRepository& tasks,const IClock& clock):m_rules(rules),m_tasks(tasks),m_clock(clock){}

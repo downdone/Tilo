@@ -2,7 +2,7 @@
 #include "domain/Task.h"
 #include <QSqlDatabase>
 
-namespace daymark {
+namespace tilo {
 
 class MigrationManager {
 public:
@@ -23,4 +23,4 @@ private:
     QSqlDatabase m_db;
 };
 
-} // namespace daymark
+} // namespace tilo

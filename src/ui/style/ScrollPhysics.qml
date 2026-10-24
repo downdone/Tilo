@@ -1,7 +1,7 @@
 import QtQuick
 QtObject {
     id: policy
-    objectName: "daymarkScrollPhysics"
+    objectName: "tiloScrollPhysics"
     required property Flickable target
     property bool keyboardNavigationEnabled: true
     readonly property bool overflowing: !!target && (target.contentHeight>target.height+1 || target.contentWidth>target.width+1)

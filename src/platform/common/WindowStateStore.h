@@ -4,7 +4,7 @@
 #include <QSettings>
 #include <QTimer>
 #include <QWindow>
-namespace daymark {
+namespace tilo {
 class WindowStateStore final:public QObject {
     Q_OBJECT
 public:

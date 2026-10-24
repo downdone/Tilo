@@ -6,7 +6,7 @@ param(
 )
 $ErrorActionPreference='Stop'
 $projectRoot=Split-Path $PSScriptRoot -Parent
-if(!$Executable){$Executable=Join-Path $projectRoot "build/$Preset/bin/daymark.exe"}
+if(!$Executable){$Executable=Join-Path $projectRoot "build/$Preset/bin/tilo.exe"}
 $Executable=(Resolve-Path -LiteralPath $Executable).Path
 $binaryHash=(Get-FileHash -LiteralPath $Executable -Algorithm SHA256).Hash.ToLowerInvariant()
 $cpuModel=(Get-CimInstance Win32_Processor | Select-Object -First 1 -ExpandProperty Name).Trim()
@@ -26,7 +26,7 @@ $previousCpu=0.0
 $failure=$null
 $success=$false
 try {
-    if(!(Test-Path -LiteralPath (Join-Path (Split-Path $Executable -Parent) 'Qt6Core.dll')) -and $env:DAYMARK_QT -and $env:DAYMARK_MINGW){$env:PATH="$env:DAYMARK_MINGW/bin;$env:DAYMARK_QT/bin;$originalPath"}
+    if(!(Test-Path -LiteralPath (Join-Path (Split-Path $Executable -Parent) 'Qt6Core.dll')) -and $env:TILO_QT -and $env:TILO_MINGW){$env:PATH="$env:TILO_MINGW/bin;$env:TILO_QT/bin;$originalPath"}
     $env:QT_QPA_PLATFORM='windows'
     $arguments=@('--soak-seconds',$DurationSeconds.ToString(),'--soak-report',('"'+$reportPath+'"'))
     $process=Start-Process -FilePath $Executable -ArgumentList $arguments -WorkingDirectory (Split-Path $Executable -Parent) -WindowStyle Hidden -PassThru -RedirectStandardError $errorLog

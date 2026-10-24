@@ -11,7 +11,7 @@
 #include "platform/common/SystemEventFilter.h"
 #include <QTemporaryDir>
 
-namespace daymark {
+namespace tilo {
 
 // Composition root. Business services will be injected here as slices are delivered.
 class AppRuntime final {
@@ -35,4 +35,4 @@ private:
     int m_startupExitCode = 1;
 };
 
-} // namespace daymark
+} // namespace tilo

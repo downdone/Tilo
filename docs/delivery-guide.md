@@ -1,14 +1,14 @@
 # Windows本地候选交付与离线校验
 
-候选ZIP是免安装目录包。解压到新目录，保留完整文件树；从托盘退出旧版后再运行daymark.exe，避免单实例激活旧程序。运行核心业务不需要Qt SDK、PowerShell、账号或联网。默认业务库在系统应用数据目录；不要把真实数据库复制进发行目录。
+候选ZIP是免安装目录包。解压到新目录，保留完整文件树；从托盘退出旧版后再运行tilo.exe，避免单实例激活旧程序。运行核心业务不需要Qt SDK、PowerShell、账号或联网。默认业务库在系统应用数据目录；不要把真实数据库复制进发行目录。
 
 ## 用户校验（PowerShell 7）
 
 下载时对ZIP计算SHA256，与随包侧车及交付渠道公布的值比较；校验和只能检测差异，不能代替可信签名。解压后从候选目录执行：
 
 ```powershell
-Get-FileHash './Daymark-版本-windows-x64-local-时间.zip' -Algorithm SHA256
-# 切换到已解压的候选目录；无需安装Qt或设置DAYMARK_QT。
+Get-FileHash './Tilo-版本-windows-x64-local-时间.zip' -Algorithm SHA256
+# 切换到已解压的候选目录；无需安装Qt或设置TILO_QT。
 pwsh -NoProfile -File ./verification/Test-Package.ps1
 ```
 
@@ -28,7 +28,7 @@ report.json的passed只表示这台机器的SDK隔离原生检查通过；cleanM
 
 ```powershell
 ./scripts/package-windows.ps1
-# 指定版本只用于核对，必须与CMake DAYMARK_VERSION一致，不能重标旧二进制。
+# 指定版本只用于核对，必须与CMake TILO_VERSION一致，不能重标旧二进制。
 ./scripts/package-windows.ps1 -Version 1.0.0-rc.2
 ```
 

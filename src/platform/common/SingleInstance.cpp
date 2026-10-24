@@ -5,14 +5,14 @@
 #include <QThread>
 #include <QTimer>
 
-namespace daymark {
+namespace tilo {
 
 SingleInstance::Outcome SingleInstance::acquire(const QString& dataDirectory)
 {
     if(!QDir().mkpath(dataDirectory))return Outcome::Failed;
     const auto canonical=QDir(dataDirectory).canonicalPath();
-    const auto name=QStringLiteral("daymark-")+QString::fromLatin1(QCryptographicHash::hash(canonical.toUtf8(),QCryptographicHash::Sha256).toHex());
-    m_lock=std::make_unique<QLockFile>(QDir(canonical).filePath(QStringLiteral("daymark.lock")));
+    const auto name=QStringLiteral("tilo-")+QString::fromLatin1(QCryptographicHash::hash(canonical.toUtf8(),QCryptographicHash::Sha256).toHex());
+    m_lock=std::make_unique<QLockFile>(QDir(canonical).filePath(QStringLiteral("tilo.lock")));
     m_lock->setStaleLockTime(0);
     if(!m_lock->tryLock()) {
         for(int attempt=0;attempt<10;++attempt) {
@@ -48,4 +48,4 @@ SingleInstance::Outcome SingleInstance::acquire(const QString& dataDirectory)
     return Outcome::Primary;
 }
 
-} // namespace daymark
+} // namespace tilo

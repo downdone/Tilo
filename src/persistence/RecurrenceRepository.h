@@ -1,7 +1,7 @@
 #pragma once
 #include "domain/Task.h"
 #include <QSqlDatabase>
-namespace daymark {
+namespace tilo {
 class RecurrenceRepository final {
 public:
     explicit RecurrenceRepository(QSqlDatabase db):m_db(std::move(db)){}

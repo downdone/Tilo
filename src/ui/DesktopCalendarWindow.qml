@@ -12,7 +12,7 @@ ApplicationWindow {
     visible: workspace.ready && workspace.preferences.desktopCalendarVisible
     transientParent: null
     flags: Qt.Window | Qt.FramelessWindowHint | (workspace.preferences.desktopCalendarTopmost ? Qt.WindowStaysOnTopHint : 0)
-    title: qsTr("Daymark · 桌面日历")
+    title: qsTr("Tilo · 桌面日历")
     color: "transparent"
     font.family: Theme.fontFamily;font.pixelSize: Theme.bodySize
     palette.windowText: Theme.text;palette.text: Theme.text;palette.buttonText: Theme.text

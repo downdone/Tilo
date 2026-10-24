@@ -21,7 +21,7 @@ UI-08组件密度修订：浮窗工具区使用WidgetAction，默认32DIP命中�
 
 ## 实施接口
 
-DaymarkStyle是仅展示层的Qt Quick Controls样式模块，基于QtQuick.Templates，未定制类型回退Basic。DesignTokens是颜色、字体、尺寸来源；既有Theme桥接模式/文字缩放，业务QML仍调用原C++命令。选择Qt自定义样式使标准确认按钮、菜单内部生成控件与显式控件都采用同一外观。
+TiloStyle是仅展示层的Qt Quick Controls样式模块，基于QtQuick.Templates，未定制类型回退Basic。DesignTokens是颜色、字体、尺寸来源；既有Theme桥接模式/文字缩放，业务QML仍调用原C++命令。选择Qt自定义样式使标准确认按钮、菜单内部生成控件与显式控件都采用同一外观。
 
 页面按工具栏、过滤/录入、正文、反馈分层；管理表单采用同一字段间距、区块标题与底部提交。常用操作优先，危险和维护操作下沉但保持可达。标题不再放大成默认Basic宽按钮，日期按钮、图标命中区按同一token计算。
 
@@ -33,7 +33,7 @@ DaymarkStyle是仅展示层的Qt Quick Controls样式模块，基于QtQuick.Temp
 
 样板页StyleGallery仅由合成验证入口打开，包含普通/主要/轻量/危险/禁用按钮、聚焦输入、菜单勾选项、下拉选项、勾选框、滑杆、数值步进及成功/错误文案。smoke调用真实下拉delegate的clicked并检查选项与弹层关闭，验证勾选切换与数值增减；这不等于物理键盘输入验收。手动触发editingFinished不会完整模拟Qt输入事件，不能据此证明数值键入路径。
 
-Windows复现：设置DAYMARK_QT与DAYMARK_MINGW后运行`./scripts/build-windows.ps1`、`./scripts/test-windows.ps1`，再运行`cmake --build --preset windows-debug --target daymark_style_qmllint daymark_qmllint`。以windows原生后端运行`daymark.exe --smoke-test --screenshot <合成PNG绝对路径>`输出各页和ui-style/ui-menu/ui-choice/ui-style-dark/ui-style-200截图。自动smoke使用临时目录，不加载用户库。
+Windows复现：设置TILO_QT与TILO_MINGW后运行`./scripts/build-windows.ps1`、`./scripts/test-windows.ps1`，再运行`cmake --build --preset windows-debug --target tilo_style_qmllint tilo_qmllint`。以windows原生后端运行`tilo.exe --smoke-test --screenshot <合成PNG绝对路径>`输出各页和ui-style/ui-menu/ui-choice/ui-style-dark/ui-style-200截图。自动smoke使用临时目录，不加载用户库。
 
 macOS保持`bash scripts/build-macos.sh`入口；当前无机器，构建与全部平台体验UNVERIFIED。系统文件选择器、窗口边框、托盘菜单保留原生样式；自定义QML样式不替换这些系统界面。
 

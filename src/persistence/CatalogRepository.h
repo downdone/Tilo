@@ -1,7 +1,7 @@
 #pragma once
 #include "domain/Task.h"
 #include <QSqlDatabase>
-namespace daymark {
+namespace tilo {
 class CatalogRepository final {
 public:
     explicit CatalogRepository(QSqlDatabase db):m_db(std::move(db)){}

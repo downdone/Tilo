@@ -2,7 +2,7 @@
 
 #include "platform/IWindowPlatform.h"
 
-namespace daymark {
+namespace tilo {
 
 // Public Qt APIs first; OS-specific workarounds must stay behind this port.
 class QtWindowPlatform final : public IWindowPlatform {
@@ -16,4 +16,4 @@ public:
     WindowResult startResize(QWindow* window) override;
 };
 
-} // namespace daymark
+} // namespace tilo

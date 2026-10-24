@@ -7,7 +7,7 @@
 #include <QList>
 #include <optional>
 
-namespace daymark {
+namespace tilo {
 
 enum class ErrorCode { None, ValidationError, NotFound, Conflict, PersistenceError, PermissionError, UnsupportedPlatform, Cancelled };
 struct Error { ErrorCode code = ErrorCode::None; QString key; };
@@ -104,4 +104,4 @@ struct OrderChange {
     std::optional<QString> headingId;
 };
 
-} // namespace daymark
+} // namespace tilo

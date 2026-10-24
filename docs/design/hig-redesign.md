@@ -6,7 +6,7 @@
 
 公开依据：[Sidebars](https://developer.apple.com/design/human-interface-guidelines/sidebars)、[Toolbars](https://developer.apple.com/design/human-interface-guidelines/toolbars)、[Settings](https://developer.apple.com/design/human-interface-guidelines/settings)、[Lists and tables](https://developer.apple.com/design/human-interface-guidelines/lists-and-tables)、[Buttons](https://developer.apple.com/design/human-interface-guidelines/buttons)、[Text fields](https://developer.apple.com/design/human-interface-guidelines/text-fields)。Purpose/Simplicity用于聚焦主任务；Familiarity用于稳定导航及可识别命令；Agency/Responsibility用于草稿与恢复；Flexibility用于空间适应；Craft/Delight用于完整状态和安静反馈。
 
-HIG支持清楚的导航层次、与当前内容相关的工具、可辨认的行选中、明确按钮用途及稳定设置分类。以下布局、颜色、尺寸和Qt实现均为Daymark决策；Windows保留原生窗口/Ctrl/托盘，不分发Apple字体/SF Symbols，不承诺Liquid Glass或Apple认证。
+HIG支持清楚的导航层次、与当前内容相关的工具、可辨认的行选中、明确按钮用途及稳定设置分类。以下布局、颜色、尺寸和Qt实现均为Tilo决策；Windows保留原生窗口/Ctrl/托盘，不分发Apple字体/SF Symbols，不承诺Liquid Glass或Apple认证。
 
 ## 全屏幕设计清单
 

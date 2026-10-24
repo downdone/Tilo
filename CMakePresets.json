@@ -8,11 +8,11 @@
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_PREFIX_PATH": "$env{DAYMARK_QT}",
-        "CMAKE_CXX_COMPILER": "$env{DAYMARK_MINGW}/bin/g++.exe",
+        "CMAKE_PREFIX_PATH": "$env{TILO_QT}",
+        "CMAKE_CXX_COMPILER": "$env{TILO_MINGW}/bin/g++.exe",
         "BUILD_TESTING": "ON"
       },
-      "environment": { "PATH": "$env{DAYMARK_MINGW}/bin;$env{DAYMARK_QT}/bin;$penv{PATH}" }
+      "environment": { "PATH": "$env{TILO_MINGW}/bin;$env{TILO_QT}/bin;$penv{PATH}" }
     },
     {
       "name": "windows-release",
@@ -25,7 +25,7 @@
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_PREFIX_PATH": "$env{DAYMARK_QT}",
+        "CMAKE_PREFIX_PATH": "$env{TILO_QT}",
         "CMAKE_OSX_DEPLOYMENT_TARGET": "13.0",
         "BUILD_TESTING": "ON"
       }

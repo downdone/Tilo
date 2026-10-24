@@ -1,4 +1,4 @@
-# Rebuild Daymark's original vector and platform icon assets using Windows drawing APIs.
+# Rebuild Tilo's original vector and platform icon assets using Windows drawing APIs.
 # No downloaded assets or additional package dependencies.
 #requires -Version 7.0
 $ErrorActionPreference='Stop'
@@ -8,7 +8,7 @@ $destination=Join-Path (Split-Path $PSScriptRoot -Parent) 'assets/icons'
 New-Item -ItemType Directory -Force -Path $destination | Out-Null
 $svg=@'
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
-  <title>Daymark</title>
+  <title>Tilo</title>
   <rect x="8" y="8" width="240" height="240" rx="56" fill="#315db5"/>
   <rect x="52" y="61" width="152" height="151" rx="24" fill="#fff"/>
   <path d="M52 102H204" stroke="#315db5" stroke-width="12"/>
@@ -16,7 +16,7 @@ $svg=@'
   <path d="M88 153L115 180L171 127" fill="none" stroke="#315db5" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
 '@
-[IO.File]::WriteAllText((Join-Path $destination 'daymark.svg'),$svg+"`n")
+[IO.File]::WriteAllText((Join-Path $destination 'tilo.svg'),$svg+"`n")
 function New-RoundedPath([single]$x,[single]$y,[single]$w,[single]$h,[single]$r) {
     $path=[Drawing.Drawing2D.GraphicsPath]::new();$diameter=2*$r
     $path.AddArc($x,$y,$diameter,$diameter,180,90)
@@ -52,7 +52,7 @@ try {
             $scaled.DrawImage($master,0,0,$size,$size)
             $bitmap.Save($stream,[Drawing.Imaging.ImageFormat]::Png)
             $frames[$size]=$stream.ToArray()
-            if($size -in @(16,32,48,256,1024)){[IO.File]::WriteAllBytes((Join-Path $destination "daymark-$size.png"),$frames[$size])}
+            if($size -in @(16,32,48,256,1024)){[IO.File]::WriteAllBytes((Join-Path $destination "tilo-$size.png"),$frames[$size])}
         } finally {$stream.Dispose();$scaled.Dispose();$bitmap.Dispose()}
     }
     $ico=[IO.MemoryStream]::new();$writer=[IO.BinaryWriter]::new($ico)
@@ -68,7 +68,7 @@ try {
             $offset+=$frames[$size].Length
         }
         foreach($size in $sizes){$writer.Write([byte[]]$frames[$size])}
-        [IO.File]::WriteAllBytes((Join-Path $destination 'daymark.ico'),$ico.ToArray())
+        [IO.File]::WriteAllBytes((Join-Path $destination 'tilo.ico'),$ico.ToArray())
     }finally{$writer.Dispose();$ico.Dispose()}
     # ICNS chunks use big endian lengths and PNG payloads.
     $icns=[IO.MemoryStream]::new();$writer=[IO.BinaryWriter]::new($icns)
@@ -80,7 +80,7 @@ try {
         $total=8;foreach($chunk in $chunks){$total+=8+$frames[$chunk[1]].Length}
         $writer.Write([Text.Encoding]::ASCII.GetBytes('icns'));Write-BigEndian $writer $total
         foreach($chunk in $chunks){$writer.Write([Text.Encoding]::ASCII.GetBytes($chunk[0]));Write-BigEndian $writer (8+$frames[$chunk[1]].Length);$writer.Write([byte[]]$frames[$chunk[1]])}
-        [IO.File]::WriteAllBytes((Join-Path $destination 'daymark.icns'),$icns.ToArray())
+        [IO.File]::WriteAllBytes((Join-Path $destination 'tilo.icns'),$icns.ToArray())
     }finally{$writer.Dispose();$icns.Dispose()}
 }finally{$graphics.Dispose();$master.Dispose();$blue.Dispose();$white.Dispose()}
-Write-Output 'Generated original Daymark SVG, PNG, ICO and ICNS assets.'
+Write-Output 'Generated original Tilo SVG, PNG, ICO and ICNS assets.'

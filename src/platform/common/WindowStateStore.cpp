@@ -1,7 +1,7 @@
 #include "WindowStateStore.h"
 #include <QGuiApplication>
 #include <QScreen>
-namespace daymark {
+namespace tilo {
 WindowStateStore::WindowStateStore(QWindow* window,const QString& path,QObject* parent,const QString& key,const QSize& minimum):QObject(parent),m_window(window),m_settings(path,QSettings::IniFormat),m_key(key),m_minimum(minimum)
 {
     if(!window)return;

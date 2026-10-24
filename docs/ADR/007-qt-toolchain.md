@@ -6,7 +6,7 @@
 
 原规格以 Qt 6.8+ 为最低基线。当前实施固定 Qt 6.10.2，CMake 使用 EXACT 校验；不是放宽产品行为。Windows 使用实际安装的 MinGW 64 位 Qt 与 GCC 13.1 配套，不混用 PATH 中其他 GCC 或 MSVC。macOS 使用同版本 macOS Kit 与 Apple Clang，待真实环境验证。
 
-DAYMARK_QT 指向 Kit 目录，DAYMARK_MINGW 指向 Windows 编译器目录；机器绝对路径只由本地环境变量或忽略的 CMakeUserPresets.json 保存。CMake >=3.24、Ninja、C++20。Debug/Release 独立构建目录。
+TILO_QT 指向 Kit 目录，TILO_MINGW 指向 Windows 编译器目录；机器绝对路径只由本地环境变量或忽略的 CMakeUserPresets.json 保存。CMake >=3.24、Ninja、C++20。Debug/Release 独立构建目录。
 
 ## 方案对比与后果
 

@@ -3,7 +3,7 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
-namespace daymark {
+namespace tilo {
 SystemEventFilter::SystemEventFilter(std::function<void()> refresh):m_refresh(std::move(refresh))
 {
     m_pending.setSingleShot(true);m_pending.setInterval(50);

@@ -4,7 +4,7 @@
 #include <QTemporaryDir>
 #include <QtTest>
 #include <QTimeZone>
-using namespace daymark;
+using namespace tilo;
 class Clock:public IClock {
 public: QDate day=QDate(2024,2,1);QDate localToday()const override{return day;}
     QDateTime nowUtc()const override{return QDateTime(day,QTime(12,0),QTimeZone::UTC);}

@@ -8,9 +8,11 @@
 4. [当前详细设计](design/architecture.md) → [模块契约](design/contracts.md) → [界面设计](design/ui.md)。
    UI修改另必读：[官方调研](design/ui-research.md) → [UI/UX设计基准](design/ui-baseline.md) → [验收与迁移](design/ui-acceptance.md)。
 5. [里程碑及任务队列](milestones.md)：依赖、下一批切片、阶段门禁。
-6. [环境与构建](environment.md) → [验证记录](verification-report.md) → [平台矩阵](platform-test-matrix.md)。
+6. [环境与构建](environment.md) → [平台矩阵](platform-test-matrix.md)。
 
 实际使用参阅[v0.1使用说明](user-guide.md)、[发行说明](release-notes-v0.1.md)与[第三方记录](third-party-notices.md)。
+
+项目于2026-10-24由 Daymark 全面更名为 Tilo，并启用新的数据目录与全新数据库（不迁移旧库），见[ADR-015](ADR/015-project-rename-tilo.md)。历史包名与构建报告保留旧名称，属于既有证据。
 
 本轮核心能力实现与本地发行见 [v0.1交付设计](design/release-v0.1.md)。实际验证仍以PROGRESS及验证报告为准。
 
@@ -18,7 +20,7 @@
 
 当前Windows V1候选交付：[设计](design/v1-candidate.md) → [逐项需求审计](v1-feature-matrix.md) → [发行说明及升级](release-notes-v1-rc.md)。
 
-全界面视觉规范与控件实现见 [UI-07视觉统一](design/visual-unification.md)：主窗、弹窗、菜单、表单、日历和桌面组件共用设计token与DaymarkStyle。
+全界面视觉规范与控件实现见 [UI-07视觉统一](design/visual-unification.md)：主窗、弹窗、菜单、表单、日历和桌面组件共用设计token与TiloStyle。
 
 组件降干扰及Apple日历/提醒事项对照见 [UI-08评估](design/widget-calendar-review.md)，包含任务日期与独立事件的边界、关联契约和后续切片。
 
@@ -42,7 +44,7 @@ Windows离线交付的只读清单、原生运行及ZIP验证见[设计](design/
 | 原则及开发流程 | principles.md、engineering.md |
 | 任务依赖与验收拆分 | milestones.md |
 | 当前状态与进行中项 | PROGRESS.md |
-| 实际执行结果 | verification-report.md、platform-test-matrix.md |
+| 实际执行结果 | platform-test-matrix.md（逐项平台状态）、PROGRESS.md（每轮证据摘要） |
 | 工程决策及已接受偏差 | [ADR 索引](ADR/README.md) |
 | 单项任务记录模板 | [任务模板](templates/task.md) |
 | W-01实施及人工验收步骤 | [窗口控制任务](tasks/W-01.md) |
@@ -77,3 +79,5 @@ Apple HIG为项目UI/UX强制依据，见[原则P-13](principles.md)；完整视
 UI-18按[就近编辑设计](design/direct-editing.md)推进共享日期/时间、快速编辑与全页直接选择，保留原子草稿和平台门禁。
 
 UI-19按[原行编辑及即时反馈](design/inline-task-experience.md)修订快速卡形式、整理与创建、详情动作、列表/完成反馈和菜单响应。
+
+UI-20 / CAL-06A按[连续日程与视觉修订](design/calendar-visual-refresh.md)推进跨日色条、长按排序、循环日程、全局颜色/行关系及提醒单层提交。

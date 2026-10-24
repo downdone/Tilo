@@ -1,6 +1,6 @@
-# Daymark v0.1.0 本地版本
+# Tilo v0.1.0 本地版本
 
-日期：2026-10-22。范围：Windows x64本地验证包；用户已明确本轮不进行GitHub推送或Release。该版本不代表完整双平台V1验收通过。
+日期：2026-10-22。范围：Windows x64 构建；该版本不代表完整双平台 V1 验收通过。
 
 ## 核心流程
 
@@ -13,7 +13,7 @@
 
 ## 验证边界
 
-具体PASS、性能与校验值登记在源码verification-report和PROGRESS，以实际执行为准。测试全部使用临时库/合成任务，不附个人任务数据。
+具体PASS、性能与平台边界登记在[PROGRESS](PROGRESS.md)和[平台矩阵](platform-test-matrix.md)，以实际执行为准。测试全部使用临时库/合成任务，不附个人任务数据。
 
 macOS构建/签名/运行、Windows真实多屏热插拔、穿透外部恢复、原生层级/焦点、中文输入法/读屏及连续8h稳定性尚未完整实测，保持UNVERIFIED。Qt标志测试不证明真实OS行为，托盘showMessage不证明通知送达。
 

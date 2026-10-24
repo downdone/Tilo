@@ -3,7 +3,7 @@
 #include <QGuiApplication>
 #include <QWindow>
 
-namespace daymark {
+namespace tilo {
 
 WindowResult QtWindowPlatform::prepare(QWindow* window)
 {
@@ -90,4 +90,4 @@ WindowResult QtWindowPlatform::startResize(QWindow* window)
     return window->startSystemResize(Qt::RightEdge|Qt::BottomEdge)?WindowResult{}:WindowResult{WindowError::MoveUnsupported};
 }
 
-} // namespace daymark
+} // namespace tilo

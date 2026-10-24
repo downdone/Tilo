@@ -3,7 +3,7 @@
 #include <QSqlDatabase>
 #include <functional>
 
-namespace daymark {
+namespace tilo {
 
 class TaskRepository final {
 public:
@@ -20,4 +20,4 @@ private:
     QSqlDatabase m_db;
 };
 
-} // namespace daymark
+} // namespace tilo

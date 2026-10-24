@@ -8,7 +8,7 @@
 #ifdef Q_OS_WIN
 #include <windows.h>
 #endif
-using namespace daymark;
+using namespace tilo;
 class SystemRecoveryTest:public QObject {
     Q_OBJECT
 private slots:

@@ -116,7 +116,7 @@ Dialog {
                         detail: qsTr("启动时检查，保留最近7份一致性快照。")
                         ComboBox {Layout.fillWidth: true;Accessible.name: qsTr("自动备份周期");model: [qsTr("每天"),qsTr("每7天"),qsTr("每30天")];currentIndex: [1,7,30].indexOf(root.workspace.preferences.backupDays);onActivated: root.workspace.setPreference("backupDays",[1,7,30][currentIndex])}
                     }
-                    ActionButton {symbol: "close";text: qsTr("退出 Daymark");onClicked: root.quitRequested()}
+                    ActionButton {symbol: "close";text: qsTr("退出 Tilo");onClicked: root.quitRequested()}
                     Label {Layout.fillWidth: true;wrapMode: Text.Wrap;font.pixelSize: Theme.captionSize;color: Theme.secondary;text: root.widgetController.trayAvailable ? qsTr("托盘可打开主窗口、恢复穿透或彻底退出。") : qsTr("系统托盘不可用；关闭主窗口将退出，穿透已禁用。")}
                 }
             }

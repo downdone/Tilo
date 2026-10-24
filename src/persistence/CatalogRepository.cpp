@@ -3,7 +3,7 @@
 #include <QVariant>
 #include <QUuid>
 
-namespace daymark {
+namespace tilo {
 namespace {
 QString tableFor(const QString& kind)
 {

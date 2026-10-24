@@ -1,7 +1,7 @@
 #pragma once
 #include "TaskService.h"
 
-namespace daymark {
+namespace tilo {
 struct CalendarEntry {
     Task task;
     QString kind; // start, deadline, both; presentation never infers date semantics.

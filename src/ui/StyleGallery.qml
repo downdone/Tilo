@@ -5,7 +5,7 @@ import QtQuick.Layouts
 Dialog {
     id: gallery
     objectName: "styleGallery"
-    title: qsTr("Daymark · 界面设计基准")
+    title: qsTr("Tilo · 界面设计基准")
     modal: true
     width: Math.min(740,parent.width-40)
     height: Math.min(650,parent.height-32)

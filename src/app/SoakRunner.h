@@ -6,7 +6,7 @@
 #include <QWindow>
 #include <functional>
 
-namespace daymark {
+namespace tilo {
 class TaskWorkspace;
 class WidgetViewModel;
 // Only constructed after synthetic smoke; never used with a user's data directory.

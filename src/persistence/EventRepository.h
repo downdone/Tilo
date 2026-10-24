@@ -2,7 +2,7 @@
 #include "domain/CalendarEvent.h"
 #include <QSqlDatabase>
 #include <QVariantList>
-namespace daymark {
+namespace tilo {
 class EventRepository final {
 public:
     explicit EventRepository(QSqlDatabase db):m_db(std::move(db)){}

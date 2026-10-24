@@ -3,7 +3,7 @@
 #include <QScreen>
 #include <cmath>
 
-namespace daymark {
+namespace tilo {
 
 WidgetViewModel::WidgetViewModel(IWindowPlatform& platform, QObject* parent)
     : QObject(parent), m_platform(platform)
@@ -190,7 +190,7 @@ QString WidgetViewModel::errorText() const
     switch (m_error) {
     case WindowError::None: return {};
     case WindowError::WindowUnavailable:
-        return tr("组件窗口不可用。请先显示组件；若仍失败，请重新启动 Daymark。");
+        return tr("组件窗口不可用。请先显示组件；若仍失败，请重新启动 Tilo。");
     case WindowError::OperationRejected:
         return tr("窗口设置未能应用，已保留原设置。请重试该操作。");
     case WindowError::MoveUnsupported:
@@ -199,4 +199,4 @@ QString WidgetViewModel::errorText() const
     return {};
 }
 
-} // namespace daymark
+} // namespace tilo

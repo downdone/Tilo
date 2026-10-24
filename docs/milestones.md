@@ -69,7 +69,7 @@ M0/M1 优先解决窗口和可靠性；不得跳到云、AI、移动端。Window
 
 每个任务覆盖适用的失败分支；UI自动探针不能替代人工窗口验证。未满足项保持TODO/BLOCKED，不“完成后补测试”。新需求先映射FR/TC并评估依赖；没有规格对应的扩展放候选清单，不插入当前切片。
 
-任务状态见 [PROGRESS](PROGRESS.md)，执行记录用 [模板](templates/task.md)，结果见 [验证报告](verification-report.md)。
+任务状态见 [PROGRESS](PROGRESS.md)，执行记录用 [模板](templates/task.md)，结果见 [PROGRESS](PROGRESS.md) 与 [平台矩阵](platform-test-matrix.md)。
 
 ## Windows候选后的执行切片
 
@@ -94,3 +94,5 @@ UI-17按[iOS分组设计](design/ios-grouped-details.md)统一圆角/图标/开�
 UI-18按[就近编辑设计](design/direct-editing.md)推进共享日期/时间、快速编辑与全页直接选择，保留原子草稿和平台门禁。
 
 UI-19按[原行编辑及即时反馈](design/inline-task-experience.md)修订快速卡形式、整理与创建、详情动作、列表/完成反馈和菜单响应。
+
+UI-20 / CAL-06A按[连续日程与视觉修订](design/calendar-visual-refresh.md)推进跨日色条、长按排序、循环日程、全局颜色/行关系及提醒单层提交。

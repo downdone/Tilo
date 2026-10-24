@@ -119,7 +119,7 @@ Control {
                 CatalogPicker {id: destinationPicker;heading: qsTr("放入项目或领域");options: root.destinations;selectedIds: [root.destinationId];heightLimit: root.hostWindow ? root.hostWindow.height-32 : 440;y: destinationButton.height+4;onSelected: function(kind,id,checked){root.destinationEdited(kind,id)};onCreateRequested: function(kind){root.createCatalogRequested(kind)}}
             }
             ReminderField {
-                id: reminder;objectName: "quickEditorReminder";workspace: root.workspace;iconOnly: true
+                id: reminder;objectName: "quickEditorReminder";workspace: root.workspace;iconOnly: true;commitTask: true
                 width: Math.max(36,Theme.iconSize+16);height: width;implicitWidth: width
                 readOnly: true;activeFocusOnTab: false;color: "transparent";leftPadding: 0;placeholderText: ""
                 background: Rectangle {radius: height/2;border.width: reminder.activeFocus ? 2 : 0;border.color: Theme.accent;color: reminder.text ? Theme.selected : Theme.sidebar}

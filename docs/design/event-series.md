@@ -10,7 +10,7 @@ schema4追加004迁移，schema1–3先一致快照；不覆盖历史SQL。JSON�
 
 ## HIG映射与视觉/交互关系
 
-依据Apple HIG [Layout](https://developer.apple.com/design/human-interface-guidelines/layout)、[Color](https://developer.apple.com/design/human-interface-guidelines/color)及项目[视觉系统](visual-system.md)；2026-10-23复核官方Markdown内容。信息优先级和一致间距映射到月份/日期/事项三级；适应尺寸映射到月格+旁侧议程/窄窗上下排；颜色语义及非唯一编码映射到今日圆标、选中底色、事件条纹和循环文字标识。以下数值为Daymark自定，不是Apple要求。
+依据Apple HIG [Layout](https://developer.apple.com/design/human-interface-guidelines/layout)、[Color](https://developer.apple.com/design/human-interface-guidelines/color)及项目[视觉系统](visual-system.md)；2026-10-23复核官方Markdown内容。信息优先级和一致间距映射到月份/日期/事项三级；适应尺寸映射到月格+旁侧议程/窄窗上下排；颜色语义及非唯一编码映射到今日圆标、选中底色、事件条纹和循环文字标识。以下数值为Tilo自定，不是Apple要求。
 
 月份24DIP demi，日期14DIP、事项12DIP，跟随1–2倍字体；今日圆标至少28DIP，事件胶囊4DIP圆角与3DIP侧条，周分隔1DIP且降低强度。选中日浅蓝，今日采用危险色token的红色家族（仅日期标识，不触发危险动作）；浅深色分别保证数字对比。月格标题省略、完整名称和提示保留，余项+N进入当天议程。事件表单以内容/时间/循环提醒/关联四组、一个外层滚动及固定提交区组织；所有模式在同一表单，无隐藏高级弹层。
 

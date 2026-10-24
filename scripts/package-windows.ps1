@@ -3,7 +3,7 @@ param([string]$Version='')
 $ErrorActionPreference='Stop'
 $projectRoot=Split-Path $PSScriptRoot -Parent
 Import-Module (Join-Path $PSScriptRoot 'PackageValidation.psm1') -Force
-$versionMatch=[regex]::Match([IO.File]::ReadAllText((Join-Path $projectRoot 'CMakeLists.txt')),'set\(DAYMARK_VERSION "([^"]+)"\)')
+$versionMatch=[regex]::Match([IO.File]::ReadAllText((Join-Path $projectRoot 'CMakeLists.txt')),'set\(TILO_VERSION "([^"]+)"\)')
 if(!$versionMatch.Success){throw 'Application version baseline missing.'}
 if(!$Version){$Version=$versionMatch.Groups[1].Value}
 if($Version -notmatch '^\d+\.\d+\.\d+(-rc\.\d+)?$' -or $Version -cne $versionMatch.Groups[1].Value){throw 'Package version must match the application version baseline.'}
@@ -11,24 +11,24 @@ $sourceRevision=(& git -C $projectRoot rev-parse HEAD).Trim()
 if($LASTEXITCODE -ne 0 -or $sourceRevision -notmatch '^[a-f0-9]{40}$'){throw 'Source revision unavailable.'}
 $changes=@(& git -C $projectRoot status --porcelain --untracked-files=normal)
 if($LASTEXITCODE -ne 0 -or $changes.Count){throw 'Commit source changes before packaging; dirty source cannot be attributed to HEAD.'}
-if(!(Test-Path -LiteralPath "$env:DAYMARK_QT/bin/windeployqt.exe")){throw 'Set DAYMARK_QT to the matching Qt kit.'}
+if(!(Test-Path -LiteralPath "$env:TILO_QT/bin/windeployqt.exe")){throw 'Set TILO_QT to the matching Qt kit.'}
 # Always reconfigure/build/test this committed checkout, rather than attributing a stale binary to HEAD.
 & (Join-Path $PSScriptRoot 'build-windows.ps1') -Preset windows-release
 & (Join-Path $PSScriptRoot 'test-windows.ps1') -Preset windows-release
-$executable=Join-Path $projectRoot 'build/windows-release/bin/daymark.exe'
+$executable=Join-Path $projectRoot 'build/windows-release/bin/tilo.exe'
 if(!(Test-Path -LiteralPath $executable)){throw 'Build and test windows-release first.'}
 $stamp=Get-Date -Format 'yyyyMMdd-HHmmss'
-$packageRoot=Join-Path $projectRoot "dist/Daymark-$Version-windows-x64-local-$stamp"
+$packageRoot=Join-Path $projectRoot "dist/Tilo-$Version-windows-x64-$stamp"
 if(Test-Path -LiteralPath $packageRoot){throw 'Output already exists; no files were overwritten.'}
 New-Item -ItemType Directory -Path $packageRoot | Out-Null
 Copy-Item -LiteralPath $executable -Destination $packageRoot
 $originalPath=$env:PATH
 try {
-    $env:PATH="$env:DAYMARK_MINGW/bin;$env:DAYMARK_QT/bin;$originalPath"
-    & "$env:DAYMARK_QT/bin/windeployqt.exe" --release --qmldir "$projectRoot/src/ui" --dir $packageRoot --no-translations (Join-Path $packageRoot 'daymark.exe')
+    $env:PATH="$env:TILO_MINGW/bin;$env:TILO_QT/bin;$originalPath"
+    & "$env:TILO_QT/bin/windeployqt.exe" --release --qmldir "$projectRoot/src/ui" --dir $packageRoot --no-translations (Join-Path $packageRoot 'tilo.exe')
     if($LASTEXITCODE -ne 0){throw 'windeployqt failed; package incomplete.'}
     foreach($dll in @('libgcc_s_seh-1.dll','libstdc++-6.dll','libwinpthread-1.dll')) {
-        $runtime=Join-Path $env:DAYMARK_MINGW "bin/$dll"
+        $runtime=Join-Path $env:TILO_MINGW "bin/$dll"
         if(!(Test-Path -LiteralPath $runtime)){throw "Compiler runtime missing: $dll"}
         Copy-Item -LiteralPath $runtime -Destination $packageRoot
     }
@@ -38,12 +38,12 @@ $verification=Join-Path $packageRoot 'verification'
 New-Item -ItemType Directory -Path $verification | Out-Null
 foreach($script in @('Test-Package.ps1','PackageValidation.psm1')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $script) -Destination $verification}
 @"
-# Daymark $Version Windows本地候选包
+# Tilo $Version Windows本地候选包
 
-解压后双击daymark.exe。默认数据位于系统应用数据目录，包内没有个人任务数据库。
+解压后双击tilo.exe。默认数据位于系统应用数据目录，包内没有个人任务数据库。
 
 - [使用指南](docs/user-guide.md)
-- [发行说明/未验证项](docs/release-notes-v1-rc2.md)
+- [发行说明](docs/release-notes-v1-rc2.md)
 - [离线校验及升级](docs/delivery-guide.md)
 - [第三方组件/再分发边界](docs/third-party-notices.md)
 
@@ -54,7 +54,7 @@ BUILD-INFO.json记录构建元数据，manifest.json提供逐文件校验。校�
 $bomDirectory=Join-Path $packageRoot 'qt-sbom'
 New-Item -ItemType Directory -Path $bomDirectory | Out-Null
 foreach($module in @('qtbase','qtdeclarative','qtshadertools','qtsvg')) {
-    $bom=Join-Path $env:DAYMARK_QT "sbom/$module-6.10.2.spdx.json"
+    $bom=Join-Path $env:TILO_QT "sbom/$module-6.10.2.spdx.json"
     if(!(Test-Path -LiteralPath $bom)){throw 'Required Qt SBOM missing; distribution review remains incomplete.'}
     Copy-Item -LiteralPath $bom -Destination $bomDirectory
 }
@@ -64,11 +64,11 @@ Prefix=.
 Plugins=.
 QmlImports=qml
 '@ | Set-Content -LiteralPath (Join-Path $packageRoot 'qt.conf') -Encoding ascii
-[ordered]@{version=$Version;sourceRevision=$sourceRevision;qt='6.10.2';schemaVersion=4;scope='Windows local release candidate';signed=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $packageRoot 'BUILD-INFO.json') -Encoding utf8
+[ordered]@{version=$Version;sourceRevision=$sourceRevision;qt='6.10.2';schemaVersion=4;scope='Windows x64 release';signed=$false} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $packageRoot 'BUILD-INFO.json') -Encoding utf8
 $manifest=Get-ChildItem -LiteralPath $packageRoot -Recurse -File | ForEach-Object {
     [ordered]@{path=[IO.Path]::GetRelativePath($packageRoot,$_.FullName).Replace('\','/');size=$_.Length;sha256=(Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}
 }
-[ordered]@{version=$Version;platform='windows-x64';scope='local verification';qt='6.10.2';files=@($manifest)} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $packageRoot 'manifest.json') -Encoding utf8
+[ordered]@{version=$Version;platform='windows-x64';scope='release';qt='6.10.2';files=@($manifest)} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $packageRoot 'manifest.json') -Encoding utf8
 & (Join-Path $PSScriptRoot 'Test-Package.ps1') -PackageDirectory $packageRoot -ReportParent (Join-Path $projectRoot 'build')
 $finalRevision=(& git -C $projectRoot rev-parse HEAD).Trim()
 $finalChanges=@(& git -C $projectRoot status --porcelain --untracked-files=normal)
@@ -77,5 +77,5 @@ $archive="$packageRoot.zip"
 Compress-Archive -LiteralPath $packageRoot -DestinationPath $archive -CompressionLevel Optimal
 $hash=(Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
 "$hash  $([IO.Path]::GetFileName($archive))" | Set-Content -LiteralPath "$archive.sha256" -Encoding ascii
-$null=Assert-DaymarkArchive $archive $packageRoot
+$null=Assert-TiloArchive $archive $packageRoot
 Write-Output "PASS: complete package, full-lifetime DLL audit, ZIP contents and SHA256. Local package: $archive"

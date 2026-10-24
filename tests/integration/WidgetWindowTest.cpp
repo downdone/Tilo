@@ -7,7 +7,7 @@
 #include <memory>
 #include <QTemporaryDir>
 
-using namespace daymark;
+using namespace tilo;
 
 // Failure injection verifies the command contract, not any OS window behavior.
 class RejectingPlatform final : public IWindowPlatform {

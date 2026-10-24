@@ -4,7 +4,7 @@
 #include <QObject>
 #include <memory>
 
-namespace daymark {
+namespace tilo {
 
 class SingleInstance final : public QObject {
     Q_OBJECT
@@ -19,4 +19,4 @@ private:
     QLocalServer m_server;
 };
 
-} // namespace daymark
+} // namespace tilo

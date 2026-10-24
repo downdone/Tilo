@@ -1,6 +1,6 @@
 #pragma once
 #include "persistence/CatalogRepository.h"
-namespace daymark {
+namespace tilo {
 class CatalogService final {
 public:
     CatalogService(CatalogRepository& repository,const IClock& clock):m_repository(repository),m_clock(clock){}

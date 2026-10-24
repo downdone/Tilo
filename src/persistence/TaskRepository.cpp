@@ -3,7 +3,7 @@
 #include <QVariant>
 #include <QSet>
 
-namespace daymark {
+namespace tilo {
 namespace {
 const QString selectTasks = QStringLiteral(
     "SELECT t.id,t.title,t.note_text,t.planning_state,t.status,t.start_on,t.deadline_on,"
@@ -184,4 +184,4 @@ Result<bool> TaskRepository::hasOpenCompletionSibling(const Task& task) const
     if(!q.exec() || !q.next())return Result<bool>::failure(ErrorCode::PersistenceError,QStringLiteral("databaseRead"));return {q.value(0).toInt()>0,{}};
 }
 
-} // namespace daymark
+} // namespace tilo

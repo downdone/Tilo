@@ -6,7 +6,7 @@ FR-007/010/018、UX-01/05/06/09/10/11/12。用户截图指出：紧凑日历只�
 
 ## 整体视觉原则
 
-UI-14扩展：[全界面设计](hig-redesign.md)。FormGroup以浅色分组而非描边卡片组织相关字段；SegmentedPicker选中同时使用背景、字重和强调色，支持左右键；EmptyState提供解释和必要的下一步动作。菜单外层12、行内6DIP圆角；图标随文字放大但上限24DIP，命中区至少32DIP。普通字号设置窗口560DIP上限、批量窗口随内容收缩；大字/短窗保留固定操作栏和滚动正文。所有值为Daymark自主选择。
+UI-14扩展：[全界面设计](hig-redesign.md)。FormGroup以浅色分组而非描边卡片组织相关字段；SegmentedPicker选中同时使用背景、字重和强调色，支持左右键；EmptyState提供解释和必要的下一步动作。菜单外层12、行内6DIP圆角；图标随文字放大但上限24DIP，命中区至少32DIP。普通字号设置窗口560DIP上限、批量窗口随内容收缩；大字/短窗保留固定操作栏和滚动正文。所有值为Tilo自主选择。
 
 | 层次 | 统一规则 | 目的 |
 |---|---|---|
@@ -23,7 +23,7 @@ UI-14扩展：[全界面设计](hig-redesign.md)。FormGroup以浅色分组而�
 
 复选框、完成圈及弹层保留必要轮廓，与表单行的装饰边框分工不同。
 
-数值为Daymark自主选择，并非Apple/Things规范数值。字段底边与实际相邻填充、正文与背景分别计算对比；装饰线不作为唯一交互标记。真实读屏和OS高对比模式单列UNVERIFIED。
+数值为Tilo自主选择，并非Apple/Things规范数值。字段底边与实际相邻填充、正文与背景分别计算对比；装饰线不作为唯一交互标记。真实读屏和OS高对比模式单列UNVERIFIED。
 
 ## 日历事项契约
 
@@ -35,7 +35,7 @@ Debug/Release构建和CTest、应用/样式lint；原生合成数据验证默认
 
 ## Apple HIG依据与本轮映射
 
-遵守[项目原则P-13](../principles.md)：Purpose/Simplicity落实为月格直接读事项、正文优先；Familiarity落实为系统字体与Windows窗口/键盘习惯；Flexibility落实为宽窄/200%重排而不隐藏事项；Agency/Responsibility保留草稿、原子保存及错误恢复；Craft落实为层次/完整状态/实际截图，Delight体现为安静且可预测的反馈。形状与数值为Daymark实现选择，来源及边界见[官方调研](ui-research.md)。
+遵守[项目原则P-13](../principles.md)：Purpose/Simplicity落实为月格直接读事项、正文优先；Familiarity落实为系统字体与Windows窗口/键盘习惯；Flexibility落实为宽窄/200%重排而不隐藏事项；Agency/Responsibility保留草稿、原子保存及错误恢复；Craft落实为层次/完整状态/实际截图，Delight体现为安静且可预测的反馈。形状与数值为Tilo实现选择，来源及边界见[官方调研](ui-research.md)。
 
 UI-16任务详情更新：[信息架构与行布局](task-detail-layout.md)以连续文档和细分隔组织区段，取代该页面的等权灰卡片；默认正文上限720×文字比例，同行/条件分组和只读信息显式展开按UI-16执行，其他表单继续使用FormGroup。
 

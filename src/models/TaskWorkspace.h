@@ -51,6 +51,7 @@ class TaskWorkspace : public QObject {
     Q_PROPERTY(bool canUndo READ canUndo NOTIFY stateChanged)
     Q_PROPERTY(QVariantList catalog READ catalog NOTIFY stateChanged)
     Q_PROPERTY(bool taskReorderingAllowed READ taskReorderingAllowed NOTIFY stateChanged)
+    Q_PROPERTY(bool taskDragAllowed READ taskDragAllowed NOTIFY stateChanged)
     Q_PROPERTY(QVariantList calendarDays READ calendarDays NOTIFY stateChanged)
     Q_PROPERTY(QVariantList calendarEvents READ calendarEvents NOTIFY stateChanged)
     Q_PROPERTY(bool canUndoEvent READ canUndoEvent NOTIFY stateChanged)
@@ -118,12 +119,23 @@ public:
     QString importSummary() const {return m_importSummary;}
     Q_INVOKABLE bool exportData(const QString& path,bool csv=false);
     Q_INVOKABLE bool previewImport(const QString& path,bool snapshot=false);
+    Q_INVOKABLE QString dataDirectory() const;
+    Q_INVOKABLE QStringList availableSnapshots() const;
+    // Recovery only: reads a verified snapshot/JSON without the live database,
+    // so it still works when the current file cannot be opened or is corrupt.
+    Q_INVOKABLE bool restoreFromFile(const QString& path,bool snapshot);
     Q_INVOKABLE bool applyImport(bool replace);
     Q_INVOKABLE bool moveTask(const QString& id,int direction);
     bool taskReorderingAllowed() const;
+    // A drag may start in more views than those that store a manual order: the
+    // sidebar's Today and Project/Area rows accept a semantic drop everywhere.
+    bool taskDragAllowed() const;
     Q_INVOKABLE int taskIndex(const QString& id) const;
     Q_INVOKABLE bool canMoveTask(const QString& id,int direction) const;
     Q_INVOKABLE bool dropTask(const QString& source,const QString& target);
+    // Semantic drops: these are the only writers for the sidebar targets.
+    Q_INVOKABLE bool moveTaskToToday(const QString& id,qint64 version);
+    Q_INVOKABLE bool moveTaskTo(const QString& id,qint64 version,const QString& kind,const QString& parentId);
     int themeMode() const {return m_themeMode;}
     double textScale() const {return m_textScale;}
     void setThemeMode(int mode);
@@ -184,7 +196,7 @@ private:
     bool runTask(const QString& operation,std::function<Result<Task>(TaskWorker&)> command);
     void finishTask(const QString& operation,const Result<Task>& result);
     bool runCatalog(std::function<Result<void>(TaskWorker&)> command,const QString& operation=QStringLiteral("catalog"),std::function<void()> completed={});
-    bool runTransfer(const QString& operation,std::function<Result<QString>(TaskWorker&)> command);
+    bool runTransfer(const QString& operation,std::function<Result<QString>(TaskWorker&)> command,bool allowRecovery=false);
     QThread m_thread;
     TaskWorker* m_worker=nullptr;
     TaskListModel m_tasks, m_todayTasks,m_deadlineTasks;

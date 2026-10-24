@@ -50,6 +50,16 @@ ColumnLayout {
         return populated>0 || spanBands.count>0 ? "PASS" : "no populated dates"
     }
     function kindText(kind) {return kind==="both" ? qsTr("计划＋截止") : kind==="deadline" ? qsTr("截止") : qsTr("计划")}
+    // Keyboard verification helper: the concrete marker row for a day, so the
+    // smoke phase can assert where Tab lands without walking the whole scene.
+    function markerFor(date,title) {
+        for(let i=0;i<dayCells.count;i++) {
+            const tile=dayCells.itemAt(i) as CalendarDay
+            if(!tile || tile.modelData.date!==date)continue
+            for(let m=0;m<tile.displayedCount;m++) {const marker=tile.markerAt(m);if(marker && marker.text.indexOf(title)>=0)return marker}
+        }
+        return null
+    }
     function offerMove(entry,date) {moving=entry;targetDate.text=date;markerKind.currentIndex=entry.kind==="deadline" ? 1 : 0;moveDialog.open()}
     function openEvent(id) {eventPreview.close();eventEditor.showEvent(id,selectedDate)}
     function openRecurring(){recurringSchedules.showSchedules()}
@@ -64,7 +74,22 @@ ColumnLayout {
     }
     onVisibleChanged: if(!visible && eventPreview && jumpDialog){eventPreview.close();jumpDialog.close()}
     function protectClose(action) {if(eventEditor.visible && eventEditor.dirty){eventEditor.safely(function(){eventEditor.close();action()});return true}eventPreview.close();jumpDialog.close();return false}
-    function showAgenda() {const flick=body.contentItem as Flickable;if(flick)flick.contentY=Math.max(0,Math.min(flick.contentHeight-flick.height,agendaSection.y));newTitle.forceActiveFocus()}
+    function showAgenda() {const flick=body.contentItem as Flickable;if(flick)flick.contentY=Math.max(0,Math.min(flick.contentHeight-flick.height,agendaSection.y));focusAgenda()}
+    function focusAgenda() {
+        const flick=body.contentItem as Flickable
+        if(flick)flick.contentY=Math.max(0,Math.min(flick.contentHeight-flick.height,agendaSection.y))
+        agenda.forceActiveFocus()
+        if(agenda.currentIndex<0)agenda.currentIndex=0
+    }
+    function activateEntry(entry) {
+        if(!entry)return
+        if(entry.eventId)inspectEvent(entry.eventId,entry.occurrenceKey||"")
+        else openTask(entry.taskId)
+    }
+    function changeEntryState(entry) {
+        if(!entry || !entry.taskId)return
+        completeTask(entry.taskId,entry.rowVersion,entry.taskStatus==="COMPLETED" ? "reopen" : "complete")
+    }
     function focusSelected() {for(let i=0;i<days.length;i++)if(days[i].date===selectedDate){const tile=dayCells.itemAt(i) as CalendarDay;if(tile){tile.forceActiveFocus();const flick=body.contentItem as Flickable;if(flick){const y=tile.mapToItem(flick.contentItem,0,0).y;if(y<flick.contentY)flick.contentY=y;else if(y+tile.height>flick.contentY+flick.height)flick.contentY=y+tile.height-flick.height}}break}}
     function moveSelection(offset) {
         const target=workspace.shiftDate(selectedDate,offset)
@@ -80,6 +105,7 @@ ColumnLayout {
         readonly property int entryLimit: Math.max(1,Math.min(panel.isWeek ? 8 : 3,Math.floor((availableHeight-dayNumber.implicitHeight-bandSpace.height-markerLineHeight-6)/(markerLineHeight+2))))
         readonly property int displayedCount: markers.count
         readonly property string firstDisplayedTitle: {if(markers.count<1)return "";const label=markers.itemAt(0) as Label;return label ? label.text : ""}
+        function markerAt(index) {return index>=0 && index<markers.count ? markers.itemAt(index) : null}
         readonly property real markerBottom: dayNumber.height+bandSpace.height+1+markers.count*(markerLineHeight+1)
         Layout.fillWidth: true
         Layout.fillHeight: true
@@ -91,6 +117,7 @@ ColumnLayout {
         focusPolicy: highlighted ? Qt.StrongFocus : Qt.ClickFocus
         onActiveFocusChanged: if(activeFocus)panel.selectedDate=modelData.date
         Accessible.name: modelData.date+qsTr("，%1项").arg(items.length)
+        Accessible.description: qsTr("方向键移动日期，Tab 进入当天的任务与日程")
         onClicked: panel.selectedDate=modelData.date
         onDoubleClicked: {panel.selectedDate=modelData.date;newTitle.forceActiveFocus()}
         Keys.onLeftPressed: function(event){panel.moveSelection(-1);event.accepted=true}
@@ -114,33 +141,70 @@ ColumnLayout {
                 Label {
                     id: marker
                     required property var modelData
+                    objectName: "calendarMarker-"+(marker.modelData.taskId || marker.modelData.eventId || "")
                     width: dayCell.availableWidth
                     height: dayCell.markerLineHeight
                     verticalAlignment: Text.AlignVCenter
                     leftPadding: modelData.eventId ? 6 : 0
-                    background: Rectangle {visible: !!marker.modelData.eventId;color: Theme.selected;radius: 4;Rectangle {width: 3;height: parent.height;radius: 1;color: Theme.accent}}
                     text: (modelData.eventId ? (modelData.recurring ? "↻ " : "") : modelData.taskStatus==="COMPLETED" ? "✓ " : modelData.kind==="deadline" ? "⚑ " : "○ ")+modelData.title
                     font.strikeout: modelData.taskStatus==="COMPLETED"
                     elide: Text.ElideRight
                     font.pixelSize: Theme.captionSize
                     color: modelData.eventId ? Theme.text : modelData.kind==="start" ? Theme.accent : Theme.danger
-                    Accessible.name: modelData.title
+                    Accessible.role: Accessible.Button
+                    Accessible.name: modelData.title+(modelData.eventId ? qsTr("，日程") : qsTr("，任务"))
+                    Accessible.description: qsTr("Enter 或空格打开；方向键移动日期后可用 Tab 到达当天各项")
+                    // Only the selected day's rows are tab stops. A month has up
+                    // to 126 concrete rows; putting all of them in the tab chain
+                    // would make the grid unusable, so arrow keys choose the day
+                    // and Tab then walks that day's visible markers.
+                    activeFocusOnTab: dayCell.highlighted
+                    Keys.onReturnPressed: function(event){event.accepted=true;panel.selectedDate=dayCell.modelData.date;panel.activateEntry(marker.modelData)}
+                    Keys.onEnterPressed: function(event){event.accepted=true;panel.selectedDate=dayCell.modelData.date;panel.activateEntry(marker.modelData)}
+                    Keys.onSpacePressed: function(event){event.accepted=true;panel.selectedDate=dayCell.modelData.date;panel.activateEntry(marker.modelData)}
+                    // Explicit chain: Tab from a marker moves to the agenda for
+                    // the same day, so a day's items and their actions stay one
+                    // keystroke apart instead of depending on scene order.
+                    Keys.onTabPressed: function(event){event.accepted=true;panel.focusAgenda()}
+                    Keys.onEscapePressed: function(event){event.accepted=true;panel.focusSelected()}
+                    focusPolicy: dayCell.highlighted ? Qt.StrongFocus : Qt.NoFocus
+                    background: Rectangle {visible: !!marker.modelData.eventId;color: Theme.selected;radius: 4;Rectangle {width: 3;height: parent.height;radius: 1;color: Theme.accent}}
                     ToolTip.visible: markerHover.hovered
-                    ToolTip.text: modelData.title
+                    ToolTip.text: marker.modelData.title
                     HoverHandler {id: markerHover}
-                    TapHandler {onTapped: {panel.selectedDate=dayCell.modelData.date;if(marker.modelData.eventId)panel.inspectEvent(marker.modelData.eventId,marker.modelData.occurrenceKey);else panel.openTask(marker.modelData.taskId)}}
+                    TapHandler {id: markerTap;onTapped: {panel.selectedDate=dayCell.modelData.date;panel.activateEntry(marker.modelData)}}
                     Drag.active: markerDrag.active
                     Drag.source: marker
                     DragHandler {id: markerDrag;target: null;enabled: !marker.modelData.eventId;onActiveChanged: {panel.draggingMarker=active;if(active)panel.draggedEntry=marker.modelData;else {marker.Drag.drop();panel.draggedEntry=null}}}
                 }
             }
-            Label {
+            Item {
+                id: overflowCell
+                objectName: "calendarOverflow-"+dayCell.modelData.date
                 width: dayCell.availableWidth
-                visible: dayCell.items.length>dayCell.entryLimit || (panel.showEvents && dayCell.modelData.hiddenBands>0)
-                text: "+"+(Math.max(0,dayCell.items.length-dayCell.entryLimit)+(panel.showEvents ? dayCell.modelData.hiddenBands || 0 : 0))
-                font.pixelSize: Theme.captionSize
-                color: Theme.accent
-                TapHandler {onTapped: {panel.selectedDate=dayCell.modelData.date;panel.showAgenda()}}
+                height: overflowLabel.visible ? overflowLabel.implicitHeight : 0
+                visible: overflowLabel.visible
+                // Grid cells are pointer-focus only, so the one tab stop per
+                // populated day is its "+N" agenda entry.
+                focusPolicy: Qt.StrongFocus
+                Label {
+                    id: overflowLabel
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    visible: dayCell.items.length>dayCell.entryLimit || (panel.showEvents && dayCell.modelData.hiddenBands>0)
+                    text: "+"+(Math.max(0,dayCell.items.length-dayCell.entryLimit)+(panel.showEvents ? dayCell.modelData.hiddenBands || 0 : 0))
+                    font.pixelSize: Theme.captionSize
+                    color: Theme.accent
+                    Accessible.role: Accessible.Button
+                    Accessible.name: qsTr("展开 %1 的其余 %2 项").arg(dayCell.modelData.date).arg(Math.max(0,dayCell.items.length-dayCell.entryLimit)+(panel.showEvents ? dayCell.modelData.hiddenBands || 0 : 0))
+                    Accessible.description: qsTr("Enter 或空格打开当天议程")
+                    font.underline: overflowCell.activeFocus
+                    Rectangle {objectName:"calendarOverflowFocusRing";anchors.fill: parent;anchors.margins: -2;radius: 4;color: "transparent";border.width: overflowCell.activeFocus ? 2 : 0;border.color: Theme.accent;visible: overflowCell.activeFocus}
+                    TapHandler {onTapped: {panel.selectedDate=dayCell.modelData.date;panel.focusAgenda()}}
+                }
+                Keys.onReturnPressed: function(event){event.accepted=true;panel.selectedDate=dayCell.modelData.date;panel.focusAgenda()}
+                Keys.onEnterPressed: function(event){event.accepted=true;panel.selectedDate=dayCell.modelData.date;panel.focusAgenda()}
+                Keys.onSpacePressed: function(event){event.accepted=true;panel.selectedDate=dayCell.modelData.date;panel.focusAgenda()}
             }
         }
         Rectangle {anchors.bottom: parent.bottom;width: parent.width;height: 1;color: Theme.separator;opacity: 0.45}
@@ -250,6 +314,24 @@ ColumnLayout {
                         anchors.fill: parent;columns: 7;rowSpacing: 0;columnSpacing: 0
                         Repeater {id: dayCells;model: panel.days;delegate: CalendarDay {}}
                     }
+                    // Keyboard users edit a date summary instead of tabbing
+                    // through every multi-day band overlapping the grid.
+                    Item {
+                        id: bandSummary
+                        objectName: "calendarBandSummary"
+                        visible: spanBands.count>0
+                        x: 4;y: monthGrid.height-height
+                        width: Math.max(0,monthGrid.width-8);height: Math.ceil(Theme.captionSize*1.6)
+                        activeFocusOnTab: visible
+                        Accessible.role: Accessible.Button
+                        Accessible.name: qsTr("%1 条跨日日程，Enter 查看当天议程").arg(spanBands.count)
+                        Rectangle {anchors.fill: parent;radius: 4;color: Theme.content;opacity: 0.94;border.width: bandSummary.activeFocus ? 2 : 0;border.color: Theme.accent}
+                        Text {anchors.fill: parent;anchors.leftMargin: 4;anchors.rightMargin: 4;text: qsTr("▰ %1 条跨日日程").arg(spanBands.count);font.family: Theme.fontFamily;font.pixelSize: Theme.captionSize;color: Theme.secondary;verticalAlignment: Text.AlignVCenter;elide: Text.ElideRight}
+                        Keys.onReturnPressed: panel.focusAgenda()
+                        Keys.onEnterPressed: panel.focusAgenda()
+                        Keys.onSpacePressed: panel.focusAgenda()
+                        TapHandler {onTapped: panel.focusAgenda()}
+                    }
                     Repeater {
                         id: spanBands
                         model: panel.bands
@@ -266,10 +348,7 @@ ColumnLayout {
                             topLeftRadius: modelData.startsHere ? 5 : 0;bottomLeftRadius: topLeftRadius
                             topRightRadius: modelData.endsHere ? 5 : 0;bottomRightRadius: topRightRadius
                             color: modelData.allDay ? Theme.scheduleFill : Theme.selected
-                            activeFocusOnTab: true;Accessible.role: Accessible.Button
-                            border.width: activeFocus ? 1 : 0;border.color: Theme.accent
-                            Keys.onReturnPressed: panel.inspectEvent(modelData.eventId,modelData.occurrenceKey)
-                            Keys.onSpacePressed: panel.inspectEvent(modelData.eventId,modelData.occurrenceKey)
+                            Accessible.ignored: true
                             Accessible.name: modelData.title+", "+modelData.firstVisibleDate+" — "+modelData.lastVisibleDate
                             Text {anchors.fill: parent;anchors.leftMargin: 6;anchors.rightMargin: 4;text: (band.modelData.recurring ? "↻ " : "")+band.modelData.title;font.family: Theme.fontFamily;font.pixelSize: Theme.captionSize;color: band.modelData.allDay ? Theme.scheduleInk : Theme.accent;verticalAlignment: Text.AlignVCenter;elide: Text.ElideRight}
                             ToolTip.visible: bandHover.hovered;ToolTip.text: Accessible.name
@@ -294,7 +373,7 @@ ColumnLayout {
                 ListView {
                 // Avoid background row incubation across model resets on Qt 6.10.2.
                 cacheBuffer: 0
-                    DS.ScrollPhysics {target: agenda}
+                    DS.ScrollPhysics {target: agenda;keyboardNavigationEnabled: true}
                     id: agenda
                     objectName: "calendarAgendaList"
                     Layout.fillWidth: true
@@ -302,13 +381,37 @@ ColumnLayout {
                     clip: true
                     model: panel.entries(panel.selectedDay)
                     spacing: Theme.fieldGap
+                    activeFocusOnTab: true
+                    focus: false
+                    keyNavigationWraps: true
+                    Accessible.role: Accessible.List
+                    Accessible.name: panel.selectedDate+qsTr(" 当天议程")
+                    Accessible.description: qsTr("上下键浏览，Enter 打开，空格完成或恢复任务")
+                    // Resolve by index: the delegate's modelData is not part of
+                    // the Item type, and the list owns the same ordering.
+                    function currentEntry() {const index=agenda.currentIndex;return index<0 ? null : panel.entries(panel.selectedDay)[index]}
+                    function activateCurrent() {panel.activateEntry(agenda.currentEntry())}
+                    function toggleCurrent() {panel.changeEntryState(agenda.currentEntry())}
                     ScrollBar.vertical: ScrollBar {}
+                    Keys.onReturnPressed: function(event){event.accepted=true;agenda.activateCurrent()}
+                    Keys.onEnterPressed: function(event){event.accepted=true;agenda.activateCurrent()}
+                    Keys.onSpacePressed: function(event){event.accepted=true;agenda.toggleCurrent()}
+                    Keys.onEscapePressed: function(event){event.accepted=true;panel.focusSelected()}
                     Label {anchors.centerIn: parent;width: parent.width;wrapMode: Text.Wrap;horizontalAlignment: Text.AlignHCenter;color: Theme.secondary;visible: agenda.count===0;text: qsTr("这一天没有显示中的任务或日程")}
                     delegate: Item {
                         id: agendaRow
                         required property var modelData
+                        required property int index
                         width: agenda.width
                         height: rowContent.implicitHeight+8
+                        readonly property bool current: ListView.isCurrentItem && agenda.activeFocus
+                        Accessible.role: Accessible.ListItem
+                        Accessible.name: modelData.title
+                        Accessible.description: modelData.eventId ? qsTr("日程，Enter 打开") : qsTr("任务，Enter 打开，空格%1").arg(modelData.taskStatus==="COMPLETED" ? qsTr("恢复") : qsTr("完成"))
+                        // Non-colour current/focus cue: a ring plus a leading bar,
+                        // independent of the selected-row fill.
+                        Rectangle {objectName:"calendarAgendaFocusRing";anchors.fill: parent;anchors.margins: -2;radius: 8;color: "transparent";border.width: agendaRow.current ? 2 : 0;border.color: Theme.accent;visible: agendaRow.current}
+                        Rectangle {x: -2;y: 4;width: 3;height: parent.height-8;radius: 1.5;color: Theme.accent;visible: agendaRow.current}
                         ColumnLayout {
                             id: rowContent
                             width: parent.width

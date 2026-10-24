@@ -8,10 +8,16 @@ ItemDelegate {
     function openVerificationMenu() {menu.open()}
     function closeVerificationMenu() {menu.close()}
     function verifyMenuSpacing() {
+        // Hidden items keep no space, and a just-opened popup needs one layout
+        // pass before positions settle; the smoke phase retries across frames
+        // rather than forcing a layout from here.
         let bottom=0
         for(let i=0;i<menu.count;i++) {
             const item=menu.itemAt(i)
             if(!item.visible) {if(item.height>0.5)return "hidden item height="+item.height;continue}
+            // Separators are decoration: they carry the same offset as their
+            // siblings and must not be treated as a gap of their own.
+            if(item instanceof MenuSeparator) {bottom=item.y+item.height;continue}
             if(Math.abs(item.y-bottom)>1)return "gap at item "+i+": "+item.y+" vs "+bottom
             bottom=item.y+item.height
         }
@@ -35,7 +41,11 @@ ItemDelegate {
     property bool selectedForBatch: false
     property bool canMoveUp: true
     property bool canMoveDown: true
+    // Manual ordering (a stored order exists) vs. starting a drag at all.
     property bool canReorder: false
+    property bool canDrag: false
+    signal cancelRequested()
+    signal deleteRequested()
     property bool heldPress: false
     property bool dragArmed: false
     property bool dragging: false
@@ -83,7 +93,7 @@ ItemDelegate {
     z: dragging ? 100 : 0
     Keys.onEscapePressed: function(event){if(dragging || dragArmed)finishDrag(false);else event.accepted=false}
     MouseArea {
-        id: holdArea;objectName: "taskHoldDrag";anchors.fill: parent;enabled: root.canReorder && !root.expanded && !root.selectionMode
+        id: holdArea;objectName: "taskHoldDrag";anchors.fill: parent;enabled: root.canDrag && !root.expanded && !root.selectionMode
         pressAndHoldInterval: 350;preventStealing: root.dragArmed;cursorShape: root.dragArmed ? Qt.ClosedHandCursor : Qt.ArrowCursor
         onPressed: root.heldPress=false
         onPressAndHold: function(mouse){root.heldPress=true;root.armDrag(mouse.x,mouse.y)}
@@ -171,11 +181,19 @@ ItemDelegate {
                 MenuItem { text: qsTr("编辑详情…"); onTriggered: root.editRequested() }
                 MenuItem {text: root.evening ? qsTr("安排到今天") : qsTr("安排到今晚");visible: root.inToday && !root.isDone;onTriggered: root.eveningRequested(!root.evening)}
                 MenuItem {text: qsTr("激活到随时可做");visible: root.canActivate;onTriggered: root.activateRequested()}
-
+                // Same commands and confirmation/undo path as the detail page.
+                // The separator belongs to the destructive group and hides with
+                // it, so a menu without destructive actions has no trailing gap.
+                MenuSeparator {visible: root.taskStatus==="OPEN"}
+                MenuItem {objectName: "taskRowCancel";text: qsTr("标记为已取消…");visible: root.taskStatus==="OPEN";onTriggered: root.cancelRequested()}
+                MenuItem {objectName: "taskRowDelete";text: qsTr("删除任务…");onTriggered: root.deleteRequested()}
             }
         }
         }
-        Item {id: inlineHost;Layout.fillWidth: true;visible: root.expanded;implicitHeight: root.inlineEditor ? root.inlineEditor.implicitHeight : 0}
+        // Qt Quick Layouts skip invisible children, so a host that only becomes
+        // visible with the card can keep a stale zero width. Keep it in the
+        // layout and collapse it to zero height when no editor is attached.
+        Item {id: inlineHost;Layout.fillWidth: true;implicitHeight: root.inlineEditor ? root.inlineEditor.implicitHeight : 0}
     }
     background: Rectangle {
         opacity: root.dragging ? 0.5 : 1

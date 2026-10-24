@@ -14,6 +14,9 @@ public:
     SqliteDatabase();
     ~SqliteDatabase();
     Result<void> open(const QString& path);
+    // Closes the connection so the underlying file can be moved aside during
+    // recovery from an unusable database.
+    void close();
     Result<QString> createSnapshot(const QString& directory);
     Result<void> ensureDailySnapshot();
     Result<void> checkIntegrity() const;

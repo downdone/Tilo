@@ -3,20 +3,37 @@
   "cmakeMinimumRequired": { "major": 3, "minor": 24, "patch": 0 },
   "configurePresets": [
     {
-      "name": "windows-debug",
+      "name": "windows-base",
+      "hidden": true,
+      "description": "Windows preset shell. TILO_QT must point at a Qt 6.10.2 kit; TILO_MINGW selects the MinGW compiler when set.",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_PREFIX_PATH": "$env{TILO_QT}",
-        "CMAKE_CXX_COMPILER": "$env{TILO_MINGW}/bin/g++.exe",
         "BUILD_TESTING": "ON"
       },
       "environment": { "PATH": "$env{TILO_MINGW}/bin;$env{TILO_QT}/bin;$penv{PATH}" }
     },
     {
+      "name": "windows-debug",
+      "inherits": "windows-base",
+      "description": "Debug build with the MinGW kit (TILO_QT + TILO_MINGW).",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "$env{TILO_MINGW}/bin/g++.exe",
+        "CMAKE_C_COMPILER": "$env{TILO_MINGW}/bin/gcc.exe"
+      }
+    },
+    {
       "name": "windows-release",
       "inherits": "windows-debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "windows-msvc",
+      "inherits": "windows-base",
+      "displayName": "Windows MSVC",
+      "description": "MSVC toolchain for CI and contributors without a MinGW kit; the compiler comes from the developer environment.",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
     },
     {
@@ -33,19 +50,48 @@
     {
       "name": "macos-release",
       "inherits": "macos-debug",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     }
   ],
   "buildPresets": [
     { "name": "windows-debug", "configurePreset": "windows-debug" },
     { "name": "windows-release", "configurePreset": "windows-release" },
+    { "name": "windows-msvc", "configurePreset": "windows-msvc" },
     { "name": "macos-debug", "configurePreset": "macos-debug" },
     { "name": "macos-release", "configurePreset": "macos-release" }
   ],
   "testPresets": [
-    { "name": "windows-debug", "configurePreset": "windows-debug", "output": { "outputOnFailure": true }, "execution": { "noTestsAction": "error" } },
-    { "name": "windows-release", "configurePreset": "windows-release", "output": { "outputOnFailure": true }, "execution": { "noTestsAction": "error" } },
-    { "name": "macos-debug", "configurePreset": "macos-debug", "output": { "outputOnFailure": true }, "execution": { "noTestsAction": "error" } },
-    { "name": "macos-release", "configurePreset": "macos-release", "output": { "outputOnFailure": true }, "execution": { "noTestsAction": "error" } }
+    {
+      "name": "windows-debug",
+      "configurePreset": "windows-debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    {
+      "name": "windows-release",
+      "configurePreset": "windows-release",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    {
+      "name": "windows-msvc",
+      "configurePreset": "windows-msvc",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    {
+      "name": "macos-debug",
+      "configurePreset": "macos-debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    {
+      "name": "macos-release",
+      "configurePreset": "macos-release",
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    }
   ]
 }

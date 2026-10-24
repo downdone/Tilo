@@ -83,7 +83,7 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
         auto* probe=new QTimer(&m_engine);
         auto smokePhase=std::make_shared<int>(0);
         probe->setInterval(100);
-        QObject::connect(probe,&QTimer::timeout,&m_engine,[this,probe,mainWindow,screenshotPath,smokePhase,soakSeconds,soakReport,phase=0,taskId=QString(),secondId=QString(),eventId=QString(),linkedTaskId=QString(),detailProjectId=QString(),detailAreaId=QString(),detailHeadingId=QString(),quickOriginalNotes=QString(),quickTagId=QString(),quickProjectId=QString(),scheduleId=QString(),dragSource=QString(),dragTarget=QString(),dragStepFirst=QString(),dragStepCount=0,dragPosition=QPointF(),completionRow=QPointer<QQuickItem>(),completionSeen=std::make_shared<bool>(false),menuFrameMs=std::make_shared<std::atomic<qint64>>(-1)]() mutable {
+        QObject::connect(probe,&QTimer::timeout,&m_engine,[this,probe,mainWindow,screenshotPath,smokePhase,soakSeconds,soakReport,phase=0,taskId=QString(),secondId=QString(),eventId=QString(),linkedTaskId=QString(),detailProjectId=QString(),detailAreaId=QString(),detailHeadingId=QString(),quickOriginalNotes=QString(),quickTagId=QString(),quickProjectId=QString(),scheduleId=QString(),dragSource=QString(),dragTarget=QString(),dragStepFirst=QString(),dragStepCount=0,dropTaskId=QString(),dropProjectId=QString(),dropVersion=0,keyboardTaskId=QString(),keyboardMarkerTaskId=QString(),keyboardStartOn=QString(),keyboardAgendaTitle=QString(),dragPosition=QPointF(),completionRow=QPointer<QQuickItem>(),completionSeen=std::make_shared<bool>(false),menuFrameMs=std::make_shared<std::atomic<qint64>>(-1)]() mutable {
             *smokePhase=phase;
             if(m_workspace.busy())return;
             auto fail=[probe](const char* stage){qCritical()<<"Basic UI smoke failed at"<<stage;probe->stop();QCoreApplication::exit(2);};
@@ -173,6 +173,314 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
                 if(phase==22)m_workspace.setTextScale(2.0);
                 if(phase==24){m_workspace.setTextScale(1.0);m_workspace.setThemeMode(1);}
                 if(!QMetaObject::invokeMethod(mainWindow,"showVerificationPage",Q_ARG(QVariant,QVariant(pages[phase-12])),Q_ARG(QVariant,QVariant(taskId)))){fail("feature pages");return;}
+            } else if(phase>=318 && phase<341) {
+                // B8: keyboard-only path. Each step starts from the focus the
+                // previous real key event left behind; no forceActiveFocus() is
+                // issued to reach a control under test.
+                auto sendKey=[&](QQuickWindow* window,int code,Qt::KeyboardModifiers modifiers=Qt::NoModifier){
+                    QKeyEvent press(QEvent::KeyPress,code,modifiers);
+                    return QCoreApplication::sendEvent(window,&press);
+                };
+                auto sendKeyTo=[&](QQuickItem* item,int code,Qt::KeyboardModifiers modifiers=Qt::NoModifier){
+                    QKeyEvent press(QEvent::KeyPress,code,modifiers);
+                    return QCoreApplication::sendEvent(item,&press);
+                };
+                auto tab=[&](QQuickWindow* window,bool back=false){return sendKey(window,Qt::Key_Tab,back ? Qt::ShiftModifier : Qt::NoModifier);};
+                // Buttons commit on key release, so activation sends both halves.
+                auto activateKey=[&](QQuickWindow* window,int code){
+                    QKeyEvent press(QEvent::KeyPress,code,Qt::NoModifier);
+                    QCoreApplication::sendEvent(window,&press);
+                    QKeyEvent release(QEvent::KeyRelease,code,Qt::NoModifier);
+                    QCoreApplication::sendEvent(window,&release);
+                    return press.isAccepted();
+                };
+                auto capture=[&](const QString& name){return screenshotPath.isEmpty() || mainWindow->grabWindow().save(screenshotPath+QLatin1Char('.')+name+QStringLiteral(".png"));};
+                auto* quick=mainWindow->findChild<QObject*>(QStringLiteral("taskQuickEditor"));
+                auto* startDate=quick ? quick->findChild<QObject*>(QStringLiteral("quickEditorStart")) : nullptr;
+                auto* panelView=mainWindow->findChild<QQuickItem*>(QStringLiteral("calendarPanel"));
+                auto* agenda=panelView ? panelView->findChild<QObject*>(QStringLiteral("calendarAgendaList")) : nullptr;
+                auto* widget=mainWindow->findChild<QQuickWindow*>(QStringLiteral("widgetWindow"));
+                auto* desktopCalendar=mainWindow->findChild<QQuickWindow*>(QStringLiteral("desktopCalendarWindow"));
+                if(!quick || !startDate || !panelView || !agenda || !widget){fail("keyboard navigation objects");return;}
+                auto focused=[&](QObject* item){auto* visual=qobject_cast<QQuickItem*>(item);return visual && visual->hasActiveFocus();};
+                auto currentRow=[&](QObject* view){return view->property("currentItem").value<QObject*>();};
+                if(phase==318) {
+                    // Anchor the month grid on today so the created entry and the
+                    // visible cells agree regardless of what earlier phases chose.
+                    if(auto* editorView=mainWindow->findChild<QObject*>(QStringLiteral("taskEditor"))){editorView->setProperty("dirty",false);QMetaObject::invokeMethod(editorView,"close");}
+                    m_workspace.setView(QStringLiteral("month"));
+                    // Use the product's own "jump to date" command so the panel's
+                    // selected day is today without poking its private state.
+                    if(!QMetaObject::invokeMethod(panelView,"jumpToDate",Q_ARG(QVariant,QVariant(m_workspace.dateOffset(0))))){fail("keyboard grid date");return;}
+                    m_workspace.createForDate(QStringLiteral("日历键盘完成验收"),m_workspace.dateOffset(0));
+                    keyboardAgendaTitle=QStringLiteral("日历键盘完成验收");
+                } else if(phase==319) {
+                    // The month view is rebuilt asynchronously; give the grid one
+                    // frame to instantiate today's cell before looking for it.
+                    static int settle=0;mainWindow->grabWindow();if(++settle<3)return;
+                    // Determined purely from the calendar's own data: the marker
+                    // for the task created above, on today's selected day cell.
+                    for(const auto& day:m_workspace.calendarDays()) {
+                        if(day.toMap().value(QStringLiteral("date")).toString()!=m_workspace.dateOffset(0))continue;
+                        for(const auto& item:day.toMap().value(QStringLiteral("entries")).toList())
+                            if(item.toMap().value(QStringLiteral("title")).toString()==keyboardAgendaTitle)keyboardTaskId=item.toMap().value(QStringLiteral("taskId")).toString();
+                    }
+                    QVariant markerResult;const bool found=QMetaObject::invokeMethod(panelView,"markerFor",Q_RETURN_ARG(QVariant,markerResult),Q_ARG(QVariant,QVariant(m_workspace.dateOffset(0))),Q_ARG(QVariant,QVariant(keyboardAgendaTitle)));
+                    auto* marker=qvariant_cast<QQuickItem*>(markerResult);
+                    if(!found || !marker || keyboardTaskId.isEmpty()){fail("keyboard agenda marker exists");return;}
+                    // Walk the real Tab chain into the grid. Any marker of the
+                    // selected day proves the path; the specific created entry is
+                    // asserted through the agenda below.
+                    for(int step=0;step<60;++step){
+                        auto* item=qobject_cast<QQuickItem*>(mainWindow->activeFocusItem());
+                        if(item && item->objectName().startsWith(QStringLiteral("calendarMarker-")))break;
+                        tab(mainWindow);
+                    }
+                    auto* reached=qobject_cast<QQuickItem*>(mainWindow->activeFocusItem());
+                    if(!reached || !reached->objectName().startsWith(QStringLiteral("calendarMarker-"))){qCritical()<<"Grid focus"<<mainWindow->activeFocusItem();fail("Tab reaches a day marker without a pointer");return;}
+                    keyboardMarkerTaskId=reached->objectName().mid(QStringLiteral("calendarMarker-").size());
+                } else if(phase==320) {
+                    // Enter on a marker opens exactly what the pointer opens: the
+                    // task's detail surface, not a second inline editor.
+                    sendKey(mainWindow,Qt::Key_Return);
+                } else if(phase==321) {
+                    auto* editorView=mainWindow->findChild<QObject*>(QStringLiteral("taskEditor"));
+                    if(!editorView || !editorView->property("visible").toBool() || mainWindow->property("editId").toString()!=keyboardMarkerTaskId){qCritical()<<"Marker Enter"<<(editorView?editorView->property("visible"):QVariant())<<mainWindow->property("editId")<<keyboardMarkerTaskId;fail("Enter on a marker opens the same task");return;}
+                    editorView->setProperty("dirty",false);QMetaObject::invokeMethod(editorView,"close");
+                    // Escape returns keyboard focus to the grid; Tab then walks
+                    // the visible stops until it reaches the agenda list.
+                    sendKey(mainWindow,Qt::Key_Escape);
+                } else if(phase==322) {
+                    for(int step=0;step<60 && !focused(agenda);++step)tab(mainWindow);
+                    if(!focused(agenda)){qCritical()<<"Agenda tab"<<mainWindow->activeFocusItem();fail("Tab reaches the agenda list");return;}
+                } else if(phase==323) {
+                    if(agenda->property("currentIndex").toInt()<0)agenda->setProperty("currentIndex",0);
+                    for(int step=0;step<agenda->property("count").toInt();++step){auto* row=currentRow(agenda);if(row && row->property("modelData").toMap().value(QStringLiteral("title")).toString()==keyboardAgendaTitle)break;sendKey(mainWindow,Qt::Key_Down);}
+                    auto* row=currentRow(agenda);
+                    if(!row || row->property("modelData").toMap().value(QStringLiteral("title")).toString()!=keyboardAgendaTitle){fail("arrow keys reach the agenda task");return;}
+                } else if(phase==324) {
+                    auto* row=currentRow(agenda);
+                    keyboardTaskId=row ? row->property("modelData").toMap().value(QStringLiteral("taskId")).toString() : QString();
+                    if(keyboardTaskId.isEmpty()){fail("agenda task identity");return;}
+                    sendKey(mainWindow,Qt::Key_Space);
+                } else if(phase==325) {
+                    if(m_workspace.task(keyboardTaskId).value(QStringLiteral("taskStatus")).toString()!=QStringLiteral("COMPLETED")){fail("Space completes the focused agenda task");return;}
+                    if(!capture(QStringLiteral("keyboard-agenda-complete"))){fail("keyboard agenda capture");return;}
+                } else if(phase==326) {
+                    if(!focused(agenda)){fail("agenda keeps focus after completion");return;}
+                    sendKey(mainWindow,Qt::Key_Escape);
+                } else if(phase==327) {
+                    if(panelView->property("selectedDate").toString().isEmpty()){fail("agenda Escape returns to the grid");return;}
+                    m_workspace.setView(QStringLiteral("today"));mainWindow->resize(1120,720);
+                } else if(phase==328) {
+                    keyboardTaskId=m_workspace.tasks()->data(m_workspace.tasks()->index(0),TaskListModel::Id).toString();
+                    if(keyboardTaskId.isEmpty() || !QMetaObject::invokeMethod(mainWindow,"openQuickEditor",Q_ARG(QVariant,QVariant(keyboardTaskId)))){fail("keyboard quick editor target");return;}
+                } else if(phase==329) {
+                    if(!quick->property("editing").toBool() || !focused(quick->findChild<QObject*>(QStringLiteral("quickEditorTitle")))){fail("quick editor keyboard entry focus");return;}
+                    // Title -> note summary -> first scheduling control.
+                    tab(mainWindow);tab(mainWindow);
+                } else if(phase==330) {
+                    if(!focused(startDate)){qCritical()<<"Quick editor focus"<<mainWindow->activeFocusItem();fail("Tab reaches the quick editor date control");return;}
+                    keyboardStartOn=m_workspace.task(keyboardTaskId).value(QStringLiteral("startOn")).toString();
+                    sendKey(mainWindow,Qt::Key_Return);
+                } else if(phase==331) {
+                    if(!startDate->property("pickerVisible").toBool()){qCritical()<<"Picker"<<startDate->property("pickerVisible")<<"focus"<<mainWindow->activeFocusItem();fail("Enter opens the inline date picker");return;}
+                    if(!capture(QStringLiteral("keyboard-quick-date"))){fail("keyboard quick date capture");return;}
+                    QMetaObject::invokeMethod(startDate,"chooseDate",Q_ARG(QVariant,QVariant(m_workspace.dateOffset(2))));
+                } else if(phase==332) {
+                    // The inline editor holds one unsaved draft: the date field and
+                    // the edit buffer change, the database must not yet.
+                    if(!focused(startDate) || startDate->property("text").toString()!=m_workspace.dateOffset(2)
+                       || !mainWindow->property("draftDirty").toBool()
+                       || !m_workspace.task(keyboardTaskId).value(QStringLiteral("startOn")).toString().isEmpty()){qCritical()<<"Quick date"<<startDate->property("text")<<m_workspace.task(keyboardTaskId).value(QStringLiteral("startOn"))<<mainWindow->property("draftDirty");fail("keyboard date choice updates only the draft");return;}
+                    // Escape is the card's documented dismiss path: it must close
+                    // the surrounding panel and leave the stored task untouched.
+                    sendKey(mainWindow,Qt::Key_Escape);
+                } else if(phase==333) {
+                    // Escape reached the card's close path: with an unsaved date
+                    // draft the shared leave guard asks before discarding it.
+                    auto* guard=mainWindow->findChild<QObject*>(QStringLiteral("unsavedChangesDialog"));
+                    if(!guard || !guard->property("visible").toBool()){qCritical()<<"Escape guard"<<quick->property("editing")<<mainWindow->property("draftDirty");fail("Escape closes the surrounding panel through the draft guard");return;}
+                    mainWindow->findChild<QObject*>(QStringLiteral("discardDraft"))->metaObject()->invokeMethod(mainWindow->findChild<QObject*>(QStringLiteral("discardDraft")),"clicked");
+                } else if(phase==334) {
+                    if(quick->property("editing").toBool() || mainWindow->property("draftDirty").toBool()){qCritical()<<"Escape close"<<quick->property("editing")<<mainWindow->property("draftDirty");fail("Escape dismisses the quick panel without writing");return;}
+                    if(m_workspace.task(keyboardTaskId).value(QStringLiteral("startOn")).toString()!=keyboardStartOn){fail("Escape discards the keyboard date draft");return;}
+                    m_workspace.setView(QStringLiteral("today"));mainWindow->resize(1120,720);
+                    if(!m_widget.setMini(false)){fail("widget keyboard expand");return;}
+                    widget->requestActivate();
+                } else if(phase==335) {
+                    auto* list=widget->findChild<QQuickItem*>(QStringLiteral("widgetTasks"));
+                    if(!widget->isVisible() || !list || list->property("count").toInt()<1){fail("widget keyboard list");return;}
+                    if(!list->hasActiveFocus()){fail("widget list takes keyboard focus");return;}
+                    // Start above the 260x190 floor so both resize and the clamp
+                    // below have room to be observed.
+                    widget->resize(320,320);
+                } else if(phase==336) {
+                    const int width=widget->width();const int height=widget->height();const int x=widget->x();
+                    sendKey(widget,Qt::Key_Left,Qt::ControlModifier);
+                    if(widget->width()!=width-16){qCritical()<<"Widget resize left"<<width<<widget->width();fail("Ctrl+Left resizes the widget");return;}
+                    sendKey(widget,Qt::Key_Up,Qt::ControlModifier);
+                    if(widget->height()!=height-16){qCritical()<<"Widget resize up"<<height<<widget->height();fail("Ctrl+Up resizes the widget");return;}
+                    if(widget->width()!=width-16 || widget->height()!=height-16){qCritical()<<"Widget resize"<<width<<height<<widget->width()<<widget->height();fail("Ctrl+Arrow resizes the widget");return;}
+                    sendKey(widget,Qt::Key_Left,Qt::ControlModifier | Qt::ShiftModifier);
+                    if(widget->x()!=x-16){fail("Shift+Ctrl+Arrow moves the widget");return;}
+                    sendKey(widget,Qt::Key_Right,Qt::ControlModifier | Qt::ShiftModifier);
+                    sendKey(widget,Qt::Key_Right,Qt::ControlModifier);
+                    sendKey(widget,Qt::Key_Down,Qt::ControlModifier);
+                    if(widget->width()!=width || widget->height()!=height){fail("widget keyboard resize restores");return;}
+                    // Clamp: shrinking past the declared minimum stops at it.
+                    for(int step=0;step<12;++step)sendKey(widget,Qt::Key_Left,Qt::ControlModifier);
+                    if(widget->width()!=widget->minimumWidth()){qCritical()<<"Widget clamp"<<widget->width()<<widget->minimumWidth();fail("widget keyboard resize clamps to the pointer minimum");return;}
+                    widget->resize(width,height);
+                } else if(phase==337) {
+                    auto* list=widget->findChild<QQuickItem*>(QStringLiteral("widgetTasks"));
+                    auto* row=currentRow(list);
+                    if(!list->hasActiveFocus() || !row){qCritical()<<"Widget list"<<list->hasActiveFocus()<<row;fail("widget list keeps keyboard focus");return;}
+                    // The widget disables its completion command while a write is
+                    // in flight, so wait for idle before sending Space.
+                    if(m_workspace.busy())return;
+                    // Completing removes the row, so remember the target now.
+                    keyboardTaskId=row->property("taskId").toString();
+                    activateKey(widget,Qt::Key_Space);
+                } else if(phase==338) {
+                    if(keyboardTaskId.isEmpty() || m_workspace.busy())return;
+                    if(m_workspace.task(keyboardTaskId).value(QStringLiteral("taskStatus")).toString()!=QStringLiteral("COMPLETED")){fail("Space completes the widget task");return;}
+                    if(!capture(QStringLiteral("keyboard-widget-list"))){fail("keyboard widget capture");return;}
+                    auto* list=widget->findChild<QQuickItem*>(QStringLiteral("widgetTasks"));
+                    auto* row=currentRow(list);
+                    keyboardTaskId=row ? row->property("taskId").toString() : QString();
+                    if(keyboardTaskId.isEmpty()){fail("widget keyboard row identity");return;}
+                    sendKey(widget,Qt::Key_Return);
+                } else if(phase==339) {
+                    // Enter raises the main window and names the task for the
+                    // hand-off. It must not open a second editor inside the widget.
+                    auto* editor=mainWindow->findChild<QObject*>(QStringLiteral("taskEditor"));
+                    if(!mainWindow->isVisible() || !editor || editor->property("visible").toBool()){qCritical()<<"Widget Enter"<<mainWindow->isVisible()<<(editor?editor->property("visible"):QVariant());fail("Enter raises the main window without a second editor");return;}
+                    if(auto* list=widget->findChild<QQuickItem*>(QStringLiteral("widgetTasks")))if(list->property("count").toInt()<1){fail("widget list survived completion");return;}
+                } else if(phase==340) {
+                    // The desktop calendar's resize grip needs a keyboard path with
+                    // the same 420x480 floor the pointer path enforces.
+                    if(!desktopCalendar){fail("desktop calendar keyboard target");return;}
+                    m_workspace.setPreference(QStringLiteral("desktopCalendarVisible"),true);
+                    desktopCalendar->resize(640,560);
+                    desktopCalendar->requestActivate();
+                    // A frameless secondary window is not activated by the
+                    // offscreen platform, so the chord is delivered to the same
+                    // item a focused child would bubble it to.
+                    auto* chrome=desktopCalendar->findChild<QQuickItem*>(QStringLiteral("desktopCalendarContent"));
+                    if(!chrome){fail("desktop calendar keyboard surface");return;}
+                    sendKeyTo(chrome,Qt::Key_Right,Qt::ControlModifier);
+                    if(desktopCalendar->width()!=664){qCritical()<<"Calendar resize"<<desktopCalendar->width();fail("Ctrl+Right resizes the desktop calendar");return;}
+                    const int before=desktopCalendar->x();
+                    sendKeyTo(chrome,Qt::Key_Left,Qt::ControlModifier|Qt::ShiftModifier);
+                    if(desktopCalendar->x()!=before-24){qCritical()<<"Calendar move"<<before<<desktopCalendar->x();fail("Shift+Ctrl+Left moves the desktop calendar");return;}
+                    for(int step=0;step<20;++step)sendKeyTo(chrome,Qt::Key_Left,Qt::ControlModifier);
+                    if(desktopCalendar->width()!=desktopCalendar->minimumWidth()){qCritical()<<"Calendar clamp"<<desktopCalendar->width()<<desktopCalendar->minimumWidth();fail("desktop calendar resize clamps to the pointer minimum");return;}
+                    if(!capture(QStringLiteral("keyboard-desktop-calendar"))){fail("keyboard desktop calendar capture");return;}
+                    // Restore the two-window baseline the final assertion checks.
+                    m_workspace.setPreference(QStringLiteral("desktopCalendarVisible"),false);
+                }
+            } else if(phase>=284 && phase<300) {
+                auto findRow=[&](const QString& id){std::function<QQuickItem*(QQuickItem*)> scan=[&](QQuickItem* item)->QQuickItem*{if(item->objectName()==QStringLiteral("taskRow-")+id)return item;for(auto* child:item->childItems())if(auto* found=scan(child))return found;return nullptr;};return scan(mainWindow->contentItem());};
+                auto find=[&](const char* name){return mainWindow->findChild<QObject*>(QString::fromLatin1(name));};
+                auto click=[&](const char* name){auto* item=find(name);return item && QMetaObject::invokeMethod(item,"clicked");};
+                auto capture=[&](const QString& name){return screenshotPath.isEmpty() || mainWindow->grabWindow().save(screenshotPath+QLatin1Char('.')+name+QStringLiteral(".png"));};
+                auto reveal=[&](const QString& id,const QString& view=QStringLiteral("today")){
+                    m_workspace.setView(view);
+                    const int index=m_workspace.taskIndex(id);
+                    auto* list=mainWindow->findChild<QQuickItem*>(QStringLiteral("taskList"));
+                    if(index<0 || !list)return false;
+                    list->setProperty("currentIndex",index);
+                    QMetaObject::invokeMethod(list,"positionViewAtIndex",Q_ARG(int,index),Q_ARG(int,int(QQuickItem::Center)));
+                    mainWindow->grabWindow();
+                    return true;
+                };
+                if(phase==284) {
+                    // B7: a semantic drop must be available from a view without a
+                    // stored manual order (Upcoming), unlike manual reordering.
+                    m_workspace.setView(QStringLiteral("upcoming"));
+                    if(!m_workspace.saveCatalog({{"kind",QStringLiteral("project")},{"title",QStringLiteral("拖放验收项目")}})){fail("drop project setup");return;}
+                } else if(phase==285) {
+                    if(!m_workspace.createTask(QStringLiteral("从即将到来拖到今天"))){fail("drop task setup");return;}
+                } else if(phase==286) {
+                    for(const auto& value:m_workspace.catalogOf(QStringLiteral("project")))if(value.toMap().value(QStringLiteral("title")).toString()==QStringLiteral("拖放验收项目"))dropProjectId=value.toMap().value(QStringLiteral("id")).toString();
+                    const auto tasks=m_workspace.tasks();
+                    if(dropProjectId.isEmpty() || tasks->rowCount()<1){fail("drop targets resolvable");return;}
+                    dropTaskId=tasks->data(tasks->index(0),TaskListModel::Id).toString();
+                    // The view switch and the new task reach the delegate one frame
+                    // later; wait for the row to exist, then assert the states.
+                    static int rowFrames=0;auto* row=findRow(dropTaskId);
+                    if(!row && ++rowFrames<20){mainWindow->update();return;}
+                    if(!row || !row->property("canDrag").toBool() || row->property("canReorder").toBool()){qCritical()<<"Drop row"<<row<<(row?row->property("canDrag"):QVariant())<<(row?row->property("canReorder"):QVariant())<<rowFrames;fail("drag starts where ordering does not");return;}
+                    // Upcoming tasks start after today, so the UI must ask before
+                    // rewriting the start date.
+                    QMetaObject::invokeMethod(mainWindow,"addToToday",Q_ARG(QVariant,QVariant(dropTaskId)));
+                } else if(phase==287) {
+                    auto* confirm=find("confirmToday");
+                    if(!confirm || !confirm->property("visible").toBool()){fail("upcoming to today confirmation");return;}
+                    click("confirmMoveToday");
+                } else if(phase==288) {
+                    const auto task=m_workspace.task(dropTaskId);
+                    if(find("confirmToday")->property("visible").toBool()){fail("today drop confirmation closes");return;}
+                    if(task.value(QStringLiteral("startOn")).toString()!=m_workspace.dateOffset(0) || !task.value(QStringLiteral("deadlineOn")).toString().isEmpty() || !task.value(QStringLiteral("todayFocus")).toBool()){fail("upcoming drop sets today and keeps deadline");return;}
+                    // Project drop from the same non-reorderable view.
+                    if(!m_workspace.moveTaskTo(dropTaskId,task.value(QStringLiteral("rowVersion")).toLongLong(),QStringLiteral("project"),dropProjectId)){fail("project drop accepted");return;}
+                } else if(phase==289) {
+                    const auto task=m_workspace.task(dropTaskId);
+                    if(task.value(QStringLiteral("projectId")).toString()!=dropProjectId || !task.value(QStringLiteral("areaId")).toString().isEmpty() || !task.value(QStringLiteral("headingId")).toString().isEmpty() || mainWindow->property("draftDirty").toBool()){fail("project drop persisted");return;}
+                    m_workspace.reload();
+                } else if(phase==290) {
+                    const auto task=m_workspace.task(dropTaskId);
+                    if(task.value(QStringLiteral("startOn")).toString()!=m_workspace.dateOffset(0) || task.value(QStringLiteral("projectId")).toString()!=dropProjectId){fail("semantic drops persist after reload");return;}
+                    if(mainWindow->property("draftDirty").toBool()){fail("drops leave no editor draft");return;}
+                    if(!reveal(dropTaskId)){fail("row menu target");return;}
+                } else if(phase==291) {
+                    // B10: the row menu offers the same commands as the detail page.
+                    auto* row=findRow(dropTaskId);
+                    if(!row){fail("row menu row instantiated");return;}
+                    QMetaObject::invokeMethod(row,"openVerificationMenu");
+                } else if(phase==292) {
+                    // Menu items are instantiated inside the Popup window, which
+                    // is not a child of the main window in the smoke scene.
+                    auto* row=findRow(dropTaskId);
+                    if(!row){fail("row menu row instantiated");return;}
+                    QObject* cancel=nullptr;QObject* remove=nullptr;
+                    for(auto* menu:row->findChildren<QObject*>())for(auto* item:menu->children())
+                        if(item->objectName()==QStringLiteral("taskRowCancel"))cancel=item;
+                        else if(item->objectName()==QStringLiteral("taskRowDelete"))remove=item;
+                    if(!capture(QStringLiteral("task-row-danger-menu"))){fail("row menu capture");return;}
+                    if(!cancel || !remove || !remove->property("visible").toBool()){fail("row menu danger commands");return;}
+                    QMetaObject::invokeMethod(row,"closeVerificationMenu");
+                    QMetaObject::invokeMethod(cancel,"triggered");
+                } else if(phase==293) {
+                    auto* confirm=find("confirmCancelTask");
+                    if(!confirm || !confirm->property("visible").toBool()){fail("row cancel confirmation");return;}
+                    click("confirmCancelTaskButton");
+                } else if(phase==294) {
+                    if(m_workspace.busy())return; // Wait for the async cancel to commit.
+                    const auto task=m_workspace.task(dropTaskId);
+                    if(task.value(QStringLiteral("taskStatus")).toString()!=QStringLiteral("CANCELLED") || mainWindow->property("draftDirty").toBool()){fail("row cancel commits without draft");return;}
+                } else if(phase==295) {
+                    if(!reveal(dropTaskId,QStringLiteral("logbook"))){fail("cancelled row target");return;}
+                } else if(phase==296) {
+                    // Cancelled rows still offer delete; open the menu again.
+                    auto* row=findRow(dropTaskId);
+                    QObject* remove=nullptr;
+                    if(row)for(auto* menu:row->findChildren<QObject*>())for(auto* item:menu->children())if(item->objectName()==QStringLiteral("taskRowDelete"))remove=item;
+                    if(!row || !remove){fail("row delete command");return;}
+                    QMetaObject::invokeMethod(row,"openVerificationMenu");
+                    QMetaObject::invokeMethod(remove,"triggered");
+                } else if(phase==297) {
+                    auto* confirm=find("confirmDeleteTask");
+                    if(!confirm || !confirm->property("visible").toBool()){fail("row delete confirmation");return;}
+                    click("confirmDeleteTaskButton");
+                } else if(phase==298) {
+                    // Delete stays a soft delete with the shared 8s undo path.
+                    if(!m_workspace.canUndo() || !m_workspace.task(dropTaskId).isEmpty()){fail("row delete keeps 8s undo");return;}
+                    if(mainWindow->property("draftDirty").toBool() || !m_workspace.undoDelete()){fail("row delete undo restores");return;}
+                } else if(phase==299) {
+                    if(m_workspace.canUndo() || m_workspace.task(dropTaskId).value(QStringLiteral("taskStatus")).toString()!=QStringLiteral("CANCELLED")){fail("undo restores the cancelled row");return;}
+                }
             } else if(phase>=202) {
                 auto* quick=mainWindow->findChild<QObject*>(QStringLiteral("taskQuickEditor"));
                 auto* reminder=mainWindow->findChild<QObject*>(QStringLiteral("editorReminder"));
@@ -186,7 +494,18 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
                 auto click=[&](const char* name){auto* item=find(name);return item && QMetaObject::invokeMethod(item,"clicked");};
                 auto capture=[&](const QString& name){return screenshotPath.isEmpty() || mainWindow->grabWindow().save(screenshotPath+QLatin1Char('.')+name+QStringLiteral(".png"));};
                 if(!quick || !reminder || !event){fail("direct editing controls");return;}
-                if(phase==202) {QMetaObject::invokeMethod(mainWindow,"openQuickEditor",Q_ARG(QVariant,QVariant(secondId)));}
+                if(phase==202) {
+                    // The inline card lays out in a native window; opening it while
+                    // the window is still becoming active leaves the card unsized,
+                    // so wait for real activation first (bounded, like the drag
+                    // and checklist phases do).
+                    static int activateFrames=0;
+                    if(QGuiApplication::platformName()!=QStringLiteral("offscreen") && !mainWindow->isActive()){
+                        if(++activateFrames>30){fail("quick editor activation");return;}
+                        mainWindow->requestActivate();return;
+                    }
+                    QMetaObject::invokeMethod(mainWindow,"openQuickEditor",Q_ARG(QVariant,QVariant(secondId)));
+                }
                 else if(phase==203) {
                     if(!quick->property("visible").toBool() || editor->property("visible").toBool()){qCritical()<<"Inline entry"<<quick->property("visible")<<editor->property("visible")<<mainWindow->property("inlineAttachAttempts")<<m_workspace.taskIndex(secondId);fail("quick entry separate from full editor");return;}
                     auto* title=quick->findChild<QObject*>(QStringLiteral("quickEditorTitle"));title->setProperty("text",QStringLiteral("快速编辑草稿"));QMetaObject::invokeMethod(title,"textEdited");
@@ -295,9 +614,14 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
                     if(m_workspace.task(secondId).value("tagIds").toStringList().contains(quickTagId) || m_workspace.catalogOf(QStringLiteral("tag")).isEmpty()){fail("task discard keeps explicitly created library tag");return;}
                     QMetaObject::invokeMethod(mainWindow,"openQuickEditor",Q_ARG(QVariant,QVariant(secondId)));
                 } else if(phase==226) {
+                    // Same native-layout settle as the cancel path above: the row
+                    // delegate re-lays out one frame after the card opens.
+                    static int settle=0;
                     auto* row=findRow(secondId);auto* visual=qobject_cast<QQuickItem*>(quick);bool descendant=false;for(auto* parent=visual->parentItem();parent;parent=parent->parentItem())if(parent==row)descendant=true;
                     auto* list=mainWindow->findChild<QQuickItem*>(QStringLiteral("taskList"));const auto cardY=visual->mapToItem(list,QPointF()).y();
-                    if(!row || !row->property("expanded").toBool() || !descendant || visual->height()>180 || cardY< -1 || cardY+visual->height()>list->height()+1 || !capture(QStringLiteral("inline-original-row"))){fail("quick editing is hosted and fully visible inside original row");return;}
+                    const bool hosted=row && row->property("expanded").toBool() && descendant && visual->height()<=180 && cardY>= -1 && cardY+visual->height()<=list->height()+1;
+                    if(!hosted && ++settle<20){mainWindow->update();return;}
+                    if(!hosted || !capture(QStringLiteral("inline-original-row"))){qCritical()<<"Inline host"<<(row?row->property("expanded"):QVariant())<<descendant<<visual->height()<<cardY<<list->height();fail("quick editing is hosted and fully visible inside original row");return;}
                     QMetaObject::invokeMethod(creator,"showFor",Q_ARG(QVariant,QVariant(QStringLiteral("project"))));find("newCatalogName")->setProperty("text",QStringLiteral("就近项目验收"));click("createCatalogHere");
                 } else if(phase==227) {
                     for(const auto& value:m_workspace.catalogOf(QStringLiteral("project"))){const auto item=value.toMap();if(item.value("title").toString()==QStringLiteral("就近项目验收"))quickProjectId=item.value("id").toString();}
@@ -306,6 +630,17 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
                 } else if(phase==228) {
                     const auto task=m_workspace.task(secondId);if(quick->property("visible").toBool() || task.value("projectId").toString()!=quickProjectId || !task.value("tagIds").toStringList().contains(quickTagId)){fail("inline organization atomic save");return;}
                     auto* row=findRow(secondId);if(!row){fail("menu target row");return;}
+                    {
+                        // Opening a native menu in the same frame that activates
+                        // the window can leave the render thread without a
+                        // swapchain, so request activation first, then wait for
+                        // real activation and one presented frame (bounded).
+                        static int waitFrames=0;
+                        if(!mainWindow->isActive() || QGuiApplication::focusWindow()!=mainWindow){
+                            if(++waitFrames>30){fail("menu activation");return;}
+                            mainWindow->requestActivate();mainWindow->update();return;
+                        }
+                    }
                     if(QGuiApplication::platformName()!=QStringLiteral("offscreen")){
                         auto started=std::make_shared<QElapsedTimer>();auto frames=std::make_shared<int>(0);auto connection=std::make_shared<QMetaObject::Connection>();started->start();
                         // Timestamp presentation on the emitting render thread; a
@@ -602,8 +937,13 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
                     else {if(!capture(QStringLiteral("unified-wide"))){fail("wide unified capture");return;}mainWindow->setProperty("draftDirty",false);QMetaObject::invokeMethod(editor,"close");mainWindow->resize(1120,720);auto* list=mainWindow->findChild<QObject*>(QStringLiteral("taskList"));if(list){QMetaObject::invokeMethod(list,"positionViewAtBeginning");QMetaObject::invokeMethod(list,"forceLayout");}}
                 } else if(phase==144){auto* row=findRow(mainWindow->contentItem());if(!row || !QMetaObject::invokeMethod(row,"openVerificationMenu")){fail("task row menu open");return;}}
                 else if(phase==145){
-                    auto* row=findRow(mainWindow->contentItem());QVariant result;
-                    if(!row || !QMetaObject::invokeMethod(row,"verifyMenuSpacing",Q_RETURN_ARG(QVariant,result)) || result.toString()!=QStringLiteral("PASS")){qCritical()<<result;fail("hidden task menu items leave no gaps");return;}
+                    // A popup on the native backend lays out one frame after it
+                    // opens; retry a bounded number of ticks before asserting so
+                    // a half-positioned menu is not mistaken for a real gap.
+                    static int menuFrames=0;auto* row=findRow(mainWindow->contentItem());QVariant result;
+                    const bool done=row && QMetaObject::invokeMethod(row,"verifyMenuSpacing",Q_RETURN_ARG(QVariant,result));
+                    if(!done || (result.toString()!=QStringLiteral("PASS") && ++menuFrames<20)){return;}
+                    if(!done || result.toString()!=QStringLiteral("PASS")){qCritical()<<result;fail("hidden task menu items leave no gaps");return;}
                     if(!screenshotPath.isEmpty())for(auto* window:QGuiApplication::allWindows())if(auto* popup=qobject_cast<QQuickWindow*>(window);popup && popup!=mainWindow && popup->isVisible() && popup->objectName()!=QStringLiteral("widgetWindow"))if(!popup->grabWindow().save(screenshotPath+QStringLiteral(".task-menu.png"))){fail("task menu capture");return;}
                     QMetaObject::invokeMethod(row,"closeVerificationMenu");
                 } else if(phase==146)m_workspace.setView(QStringLiteral("today"));
@@ -713,17 +1053,26 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
                     m_workspace.setPreference(QStringLiteral("desktopCalendarVisible"),true);
                 } else if(phase==162) {
                     auto* calendar=mainWindow->findChild<QQuickWindow*>(QStringLiteral("desktopCalendarWindow"));QVariant independent;
-                    if(!calendar || !calendar->isVisible() || !mainWindow->findChild<QQuickWindow*>(QStringLiteral("widgetWindow"))->isVisible() || !QMetaObject::invokeMethod(calendar,"verifyIndependence",Q_RETURN_ARG(QVariant,independent)) || !independent.toBool() || m_workspace.view()!=QStringLiteral("today")){fail("independent calendar and widget coexist");return;}
+                    if(calendar==nullptr || !calendar->isVisible() || !mainWindow->findChild<QQuickWindow*>(QStringLiteral("widgetWindow"))->isVisible() || !QMetaObject::invokeMethod(calendar,"verifyIndependence",Q_RETURN_ARG(QVariant,independent)) || !independent.toBool() || m_workspace.view()!=QStringLiteral("today")){fail("independent calendar and widget coexist");return;}
                     if(!screenshotPath.isEmpty() && !calendar->grabWindow().save(screenshotPath+QStringLiteral(".desktop-calendar.png"))){fail("desktop calendar capture");return;}
                     m_workspace.setTextScale(2);calendar->resize(880,640);
                 } else if(phase==163) {
                     auto* calendar=mainWindow->findChild<QQuickWindow*>(QStringLiteral("desktopCalendarWindow"));
                     if(!calendar || !calendar->isVisible()){fail("large desktop calendar");return;}
                     if(!screenshotPath.isEmpty() && !calendar->grabWindow().save(screenshotPath+QStringLiteral(".desktop-calendar-200.png"))){fail("large desktop calendar capture");return;}
+                    // Hand activation back to the main window *before* hiding the
+                    // calendar. Once the activated desktop window is gone the
+                    // process is no longer foreground, and Windows refuses the
+                    // self-activation a later requestActivate() would need.
+                    if(QGuiApplication::platformName()!=QStringLiteral("offscreen"))mainWindow->requestActivate();
                     QMetaObject::invokeMethod(calendar,"close");
                 } else if(phase==164) {
                     auto* calendar=mainWindow->findChild<QQuickWindow*>(QStringLiteral("desktopCalendarWindow"));
                     if(!calendar || calendar->isVisible() || !mainWindow->findChild<QQuickWindow*>(QStringLiteral("widgetWindow"))->isVisible() || m_workspace.preferences().value(QStringLiteral("desktopCalendarVisible")).toBool()){fail("calendar hide preserves task widget");return;}
+                    // Closing the activated desktop window leaves no window active
+                    // on the native backend; later phases need the main window
+                    // active for focus and layout-dependent assertions.
+                    if(QGuiApplication::platformName()!=QStringLiteral("offscreen"))mainWindow->requestActivate();
                     m_workspace.setTextScale(1);
                 } else if(phase==165) {
                     QMetaObject::invokeMethod(mainWindow,"showVerificationPage",Q_ARG(QVariant,QVariant(QStringLiteral("event"))),Q_ARG(QVariant,QVariant(eventId)));
@@ -796,6 +1145,9 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
                     if(calendar->width()!=420 || calendar->height()!=480 || !preview->property("visible").toBool() || !edit || edit->mapToScene(QPointF(0,edit->height())).y()>calendar->height()+1 || (!screenshotPath.isEmpty() && !calendar->grabWindow().save(screenshotPath+QStringLiteral(".desktop-event-preview-200.png")))){fail("narrow large preview action");return;}
                     QMetaObject::invokeMethod(preview,"close");m_workspace.setTextScale(1);
                     if(!independent || independent->property("anchorDate").toString()!=QStringLiteral("2024-02-29") || panel->property("selectedDate").toString()!=QStringLiteral("2028-02-29")){fail("independent date jump");return;}
+                    // Hand activation back before the desktop window goes away
+                    // (same reason as the CAL-03 hide step above).
+                    if(QGuiApplication::platformName()!=QStringLiteral("offscreen"))mainWindow->requestActivate();
                     QMetaObject::invokeMethod(mainWindow->findChild<QQuickWindow*>(QStringLiteral("desktopCalendarWindow")),"close");
                     m_workspace.selectCalendarDate(m_workspace.calendarEvent(eventId).value(QStringLiteral("startDate")).toString());
                 }
@@ -1094,7 +1446,7 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
                 }
             }
             ++phase;
-            if(phase<271)return;
+            if(phase<355)return;
             // Occluded native windows may not receive frames to finish ListView
             // incubation. Complete the synthetic view before reporting/teardown.
             if(auto* controller=m_engine.incubationController();controller && controller->incubatingObjectCount()>0) {
@@ -1122,11 +1474,11 @@ bool AppRuntime::start(bool smokeTest, const QString& dataDirectory, const QStri
             probe->stop();
         });
         probe->start();
-        // The probe advances at most one of the 271 phases per 100ms tick, so the
+        // The probe advances at most one of the 355 phases per 100ms tick, so the
         // interval alone costs 27s and the native backend adds window activation
         // and focus waits on top. These remain bounded hang guards, not timing
         // assertions: 75s ordinary, 90s when every surface is captured.
-        QTimer::singleShot(screenshotPath.isEmpty() ? 75000 : 90000,&m_engine,[smokePhase]{if(*smokePhase>=271)return;qCritical()<<"UI smoke timeout at phase"<<*smokePhase;QCoreApplication::exit(3);});
+        QTimer::singleShot(screenshotPath.isEmpty() ? 75000 : 90000,&m_engine,[smokePhase]{if(*smokePhase>=355)return;qCritical()<<"UI smoke timeout at phase"<<*smokePhase;QCoreApplication::exit(3);});
     }
     return true;
 }

@@ -253,6 +253,119 @@ private slots:
         w.setView(QStringLiteral("today"));QVERIFY(w.taskReorderingAllowed());w.setIncludeCompleted(true);QVERIFY(!w.taskReorderingAllowed());QVERIFY(!w.dropTask(last,first));w.setIncludeCompleted(false);
         w.setTagFilter(QStringLiteral("missing"));QVERIFY(!w.dropTask(last,first));w.setTagFilter(QString());
     }
+    void semanticDropsWorkOutsideReorderableViews()
+    {
+        QTemporaryDir dir;TaskWorkspace w;w.start(dir.filePath(QStringLiteral("semantic-drops.sqlite")));QTRY_VERIFY(!w.busy());QVERIFY(w.ready());
+        QVERIFY(w.saveCatalog({{"kind",QStringLiteral("project")},{"title",QStringLiteral("投递项目")}}));QTRY_VERIFY(!w.busy());
+        QVERIFY(w.saveCatalog({{"kind",QStringLiteral("area")},{"title",QStringLiteral("投递领域")}}));QTRY_VERIFY(!w.busy());
+        const auto project=w.catalogOf(QStringLiteral("project")).first().toMap().value(QStringLiteral("id")).toString();
+        QVERIFY(!project.isEmpty());
+        const auto area=w.catalogOf(QStringLiteral("area")).first().toMap().value(QStringLiteral("id")).toString();
+        QVERIFY(w.saveCatalog({{"kind",QStringLiteral("heading")},{"title",QStringLiteral("分组")},{"parentId",project}}));QTRY_VERIFY(!w.busy());
+        const auto heading=w.catalogOf(QStringLiteral("heading"),project).first().toMap().value(QStringLiteral("id")).toString();
+        QVERIFY(!heading.isEmpty());
+
+        // A task generated from the Upcoming view starts tomorrow, so it is not
+        // reorderable there; the sidebar Today drop must still reschedule it.
+        w.setView(QStringLiteral("upcoming"));QVERIFY(w.createTask(QStringLiteral("从即将到来拖到今天")));QTRY_VERIFY(!w.busy());
+        const auto id=w.tasks()->data(w.tasks()->index(0),TaskListModel::Id).toString();
+        const auto before=w.task(id);
+        QCOMPARE(before.value(QStringLiteral("startOn")).toString(),w.dateOffset(1));
+        QVERIFY(!w.taskReorderingAllowed());QVERIFY(w.taskDragAllowed());
+
+        // Ordering is still refused from a non-reorderable view even though a
+        // drag is allowed: the two predicates are deliberately separate.
+        QVERIFY(!w.dropTask(id,id));QVERIFY(!w.moveTask(id,1));
+
+        // Give it a heading + area first so mutual exclusion has something to clear.
+        QVERIFY(w.saveDetails(id,before.value(QStringLiteral("rowVersion")).toLongLong(),{{QStringLiteral("headingId"),heading}}));QTRY_VERIFY(!w.busy());
+        QVERIFY(w.saveDetails(id,w.task(id).value(QStringLiteral("rowVersion")).toLongLong(),{{QStringLiteral("areaId"),area}}));QTRY_VERIFY(!w.busy());
+        QVERIFY(!w.task(id).value(QStringLiteral("areaId")).toString().isEmpty());
+
+        // Drop 1: project row assigns the project and clears area/heading.
+        QVERIFY(w.moveTaskTo(id,w.task(id).value(QStringLiteral("rowVersion")).toLongLong(),QStringLiteral("project"),project));
+        QTRY_VERIFY(!w.busy());QVERIFY(w.errorText().isEmpty());
+        auto dropped=w.task(id);
+        QCOMPARE(dropped.value(QStringLiteral("projectId")).toString(),project);
+        QVERIFY(dropped.value(QStringLiteral("areaId")).toString().isEmpty());
+        QVERIFY(dropped.value(QStringLiteral("headingId")).toString().isEmpty());
+        QCOMPARE(dropped.value(QStringLiteral("startOn")).toString(),w.dateOffset(1)); // Project drop keeps the date.
+
+        // Drop 2: Today target sets the start date to today and keeps the deadline.
+        // Give it a real deadline first (start_on <= deadline_on at all times).
+        QVERIFY(w.saveTask(id,dropped.value(QStringLiteral("rowVersion")).toLongLong(),dropped.value(QStringLiteral("title")).toString(),QString(),QStringLiteral("ACTIVE"),w.dateOffset(2),w.dateOffset(4),false));
+        QTRY_VERIFY(!w.busy());QVERIFY(w.errorText().isEmpty());
+        const auto dated=w.task(id);
+        QVERIFY(w.moveTaskToToday(id,dated.value(QStringLiteral("rowVersion")).toLongLong()));
+        QTRY_VERIFY(!w.busy());QVERIFY(w.errorText().isEmpty());
+        auto moved=w.task(id);
+        QCOMPARE(moved.value(QStringLiteral("startOn")).toString(),w.dateOffset(0));
+        QCOMPARE(moved.value(QStringLiteral("deadlineOn")).toString(),w.dateOffset(4)); // Deadline preserved.
+        QVERIFY(moved.value(QStringLiteral("todayFocus")).toBool());
+        QCOMPARE(moved.value(QStringLiteral("projectId")).toString(),project); // Drop does not disturb ownership.
+
+        // The semantic drop persists across a reload and appears in Today.
+        w.reload();QTRY_VERIFY(!w.busy());
+        QCOMPARE(w.task(id).value(QStringLiteral("startOn")).toString(),w.dateOffset(0));
+        w.setView(QStringLiteral("today"));
+        QVERIFY(w.taskIndex(id)>=0);
+    }
+    void semanticDropFailuresLeaveDataUnchanged()
+    {
+        QTemporaryDir dir;TaskWorkspace w;w.start(dir.filePath(QStringLiteral("semantic-failure.sqlite")));QTRY_VERIFY(!w.busy());QVERIFY(w.ready());
+        QVERIFY(w.saveCatalog({{"kind",QStringLiteral("project")},{"title",QStringLiteral("有效项目")}}));QTRY_VERIFY(!w.busy());
+        const auto project=w.catalogOf(QStringLiteral("project")).first().toMap().value(QStringLiteral("id")).toString();
+        w.setView(QStringLiteral("anytime"));QVERIFY(w.createTask(QStringLiteral("不可拖到不存在的项目")));QTRY_VERIFY(!w.busy());
+        const auto id=w.tasks()->data(w.tasks()->index(0),TaskListModel::Id).toString();
+        const auto before=w.task(id);
+        const auto version=before.value(QStringLiteral("rowVersion")).toLongLong();
+
+        // Unknown project: rejected by CatalogService and rolled back; the row
+        // version and ownership must be untouched.
+        QVERIFY(w.moveTaskTo(id,version,QStringLiteral("project"),QStringLiteral("missing-project")));QTRY_VERIFY(!w.busy());
+        QVERIFY(!w.errorText().isEmpty());QCOMPARE(w.task(id),before);
+        w.clearError();
+        // Stale version: the service's CAS conflict must not write either.
+        QVERIFY(w.moveTaskTo(id,version-1,QStringLiteral("project"),project));QTRY_VERIFY(!w.busy());
+        QVERIFY(!w.errorText().isEmpty());QCOMPARE(w.task(id),before);
+        w.clearError();
+        // Non-open or unknown ids are refused before any write is queued.
+        QVERIFY(!w.moveTaskToToday(QStringLiteral("missing"),version));
+        QVERIFY(!w.moveTaskTo(id,version,QStringLiteral("tag"),project));
+        QCOMPARE(w.task(id),before);
+    }
+    void corruptDatabaseCanStillBeRestoredFromSnapshot()
+    {
+        QTemporaryDir dir;
+        const auto path=dir.filePath(QStringLiteral("recovery.sqlite"));
+        QString backup;
+        {
+            TaskWorkspace w;w.start(path);QTRY_VERIFY(!w.busy());QVERIFY(w.ready());
+            QVERIFY(w.createTask(QStringLiteral("需要恢复的任务")));QTRY_VERIFY(!w.busy());
+            QVERIFY(w.createBackup());QTRY_VERIFY(!w.busy());
+            QVERIFY(w.errorText().isEmpty());
+            const auto snapshots=w.availableSnapshots();
+            QVERIFY(!snapshots.isEmpty());
+            backup=snapshots.first();
+            QCOMPARE(w.dataDirectory(),QFileInfo(path).absolutePath());
+        }
+        QVERIFY(QFileInfo::exists(backup));
+        // Damage the live file so the next open fails its integrity check.
+        {
+            QFile file(path);QVERIFY(file.open(QIODevice::ReadWrite));
+            file.seek(0);file.write(QByteArray(4096,'x'));file.close();
+        }
+        TaskWorkspace w;w.start(path);QTRY_VERIFY(!w.busy());
+        // The database cannot load, but recovery must remain reachable: this is
+        // the only command family allowed while the workspace is not ready.
+        QVERIFY(!w.ready());
+        QVERIFY(!w.createTask(QStringLiteral("应被拒绝")));
+        QVERIFY(w.restoreFromFile(backup,true));
+        QTRY_VERIFY(!w.busy());
+        QVERIFY2(w.ready(),qPrintable(w.errorText()));
+        QCOMPARE(w.tasks()->rowCount(),1);
+        QCOMPARE(w.tasks()->data(w.tasks()->index(0),TaskListModel::Title).toString(),QStringLiteral("需要恢复的任务"));
+    }
 };
 QTEST_GUILESS_MAIN(TaskWorkspaceTest)
 #include "TaskWorkspaceTest.moc"

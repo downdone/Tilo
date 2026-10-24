@@ -4,7 +4,30 @@
 
 ## 当前目标与范围
 
-当前目标是 **V1.0 正式版**：Windows/macOS 双平台可用、离线、无账号的本地任务与日历应用。V1.0 发布前必须完成的功能范围见 [产品规格](01_PRODUCT_SPEC.md)、[里程碑](milestones.md) 与 [需求审计](v1-feature-matrix.md)；平台验收状态见 [平台矩阵](platform-test-matrix.md)。
+当前目标是 **V1.0 正式版**：Windows/macOS 双平台可用、离线、无账号的本地任务与日历应用。V1.0 发布前必须完成的功能范围见 [产品规格](01_PRODUCT_SPEC.md)、[里程碑](milestones.md) 与 [需求审计](v1-feature-matrix.md)；平台验收状态见 [平台矩阵](platform-test-matrix.md)；发布范围与验收口径见 [ADR-016](ADR/016-v1-release-scope.md)。
+
+### V1.0 独立评审与修复（DONE；平台门禁见下）
+
+对 `1.0.0-rc.2` 状态做了一次只读独立评审（功能定义、UI/UX 对 HIG 的符合度、发布就绪性），结论为：作为 Windows 本地预览可通过，按 PRD 的 V1.0 定义不合格。评审报告不进入版本库，结论与处置记录在本节。
+
+已修复（本轮）：
+
+- **事件删除确认不可执行**：`EventDialog.qml` 的删除确认声明了 `onAccepted` 却没有按钮，用户无法完成删除。改为显式「保留日程 / 删除日程」页脚，删除按钮使用危险色。
+- **破坏性确认的默认动作不安全**：所有删除、替换数据、恢复快照、停止规则、移动日期的确认框原先使用 `Ok|Cancel` 标准按钮，接受按钮既是最醒目样式又是回车默认动作，与 `ui-baseline` 的“破坏性操作不作为默认 Enter 动作”冲突。全部改为显式页脚：默认焦点与回车落在安全选项上，破坏动作使用危险色且不设为主按钮。
+- **数据库不可用时无法恢复**：打开或完整性检查失败会令 `m_ready=false`，此后所有命令静默失败，包括应用内的快照恢复路径；`databaseIntegrity`、`databaseOpen`、`databaseRead`、`databaseConfigure`、`migrationFailed`、`dataDirectory`、`checklistInvalid`、`catalogInvalid`、`orderInvalid` 也未映射，用户只能看到笼统的数据库错误。现补充这些错误的可操作文案，新增 `dataDirectory()`、`availableSnapshots()`、`restoreFromFile()`，并在错误提示旁提供「恢复备份…」入口；恢复命令是唯一允许在非就绪状态下执行的操作族，且始终整体替换（不对备份做增量合并）。损坏库的恢复路径由 `corruptDatabaseCanStillBeRestoredFromSnapshot` 用真实损坏文件与快照覆盖。
+- **关闭提示会把用户困住**：首次关闭到托盘的提示只有一个按钮，其关闭依赖偏好写入成功；只读配置或磁盘满时无法关闭也无法退出。现在提示包含「知道了，隐藏主窗口」与「退出 Tilo」，且不依赖写入结果。
+- **版本与发布元数据**：`TILO_VERSION` 提升为 `1.0.0`；打包脚本的 scope 由本地候选改为 release；新增 `LICENSE`（MIT）、[1.0.0 发行说明](release-notes-v1.0.md) 与 [ADR-016](ADR/016-v1-release-scope.md)。
+- **CI 工具链**：原 CI 安装 MSVC Qt 却使用写死 MinGW 编译器的预设，Windows 作业无法配置。预设拆分为 `windows-base`（隐藏）、`windows-debug/release`（MinGW）与 `windows-msvc`；CI 与 Release 作业使用对应预设，并新增 macOS arm64 与 x86_64 双架构矩阵。
+- **关于信息**：设置页新增版本、许可与数据目录，用户无需查文档即可定位数据文件。
+- **拖动范围**：新增 C++ `moveTaskToToday`、`moveTaskTo` 与 `taskDragAllowed`，把「任意列表→侧栏今天」「拖入项目/领域」的判定收进 `TaskWorkspace`；Upcoming→今天仍走改期确认，跨视图拖动只改开始日、不复制实体。
+- **行菜单与详情页一致**：行菜单补齐「标记为已取消…」「删除任务…」，与详情页共用同一确认与 8 秒撤销路径；分隔线随破坏动作可见性隐藏，`verifyMenuSpacing()` 跳过装饰性分隔线。
+- **键盘可达性**：快速编辑卡的日期/截止/标签/项目/提醒进入 Tab 链并提供 Enter/空格/Escape 路径；月格事项、当天议程、桌面组件行、桌面日历的缩放与移动均可只用键盘操作；焦点环为非颜色提示（2px 描边 + 前置色条）。
+- **行内卡片宿主**：`TaskRow` 的 `inlineHost` 不再随卡片可见性离开布局，避免原生后端上宿主保持 0 宽导致卡片无法排版。
+- **重复规则停止确认**：`stopConfirm` 补上 `parent`/`width`，消除 `implicitWidth` 绑定循环（offscreen `warnings=true` 的根因）。
+
+验证（本轮实测）：Debug 与 Release 各 17/17 CTest 通过；`tilo_qmllint` 与 `tilo_style_qmllint` 无诊断；颜色审计四组均无失败项；文档本地链接 65 文件通过；`QT_QPA_PLATFORM=offscreen` smoke 退出 0、`warnings=false`；Windows 原生 OpenGL 后端 Debug 3/3 与 Release 3/3 无截图运行退出 0，Release 全截图运行退出 0（116 张）。
+
+环境限制（不得当作已通过）：验证时段主机处于 Windows 锁定会话。D3D11 后端对非前台窗口不再交换帧，脚本化原生流程会停在依赖新帧的断言（菜单间距、行内卡片宽度）。同一构建在 OpenGL 与 offscreen 下全流程通过，未修改的上一提交二进制在 D3D11 下同样失败，故判定为环境而非回归。`scripts/test-window-native.ps1` 在锁屏会话下会因此报 `Native QML startup failed`，解锁后需重跑确认。真实键鼠、IME、读屏、多屏、睡眠、8h、干净机、签名与 macOS 仍 UNVERIFIED，详见[平台矩阵](platform-test-matrix.md)。
 
 ### 构建与验证基线
 

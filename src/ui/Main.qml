@@ -63,7 +63,7 @@ ApplicationWindow {
     property bool editorManualScroll: false
     property string editorFocusLayoutKey: ""
     readonly property bool editingActive: editor.visible || quickEditor.editing
-    readonly property bool toolModalOpen: catalogCreate.visible || quickEditor.editing || organization.visible || recurrence.visible || windowSettings.visible || dataTools.visible || notifications.visible || batchDialog.visible || firstClose.visible || datePicker.visible || leaveDialog.visible || confirmToday.visible || calendarPanel.modalOpen
+    readonly property bool toolModalOpen: catalogCreate.visible || quickEditor.editing || organization.visible || recurrence.visible || windowSettings.visible || dataTools.visible || notifications.visible || batchDialog.visible || firstClose.visible || datePicker.visible || leaveDialog.visible || confirmToday.visible || confirmCancel.visible || confirmDelete.visible || calendarPanel.modalOpen
     property var batchSelection: []
     function toggleBatch(id,version) {
         const next=batchSelection.slice()
@@ -267,6 +267,7 @@ ApplicationWindow {
     }
     property var viewPositions: ({})
     property var todayTarget: ({})
+    property var pendingTask: ({})
     function addToToday(id) {
         navigateSafely(function(){
             const item=taskWorkspace.task(id)
@@ -277,7 +278,35 @@ ApplicationWindow {
     }
     function applyToday() {
         const item=taskWorkspace.task(todayTarget.taskId)
-        if(item.taskId){editor.close();taskWorkspace.saveTask(item.taskId,item.rowVersion,item.title,item.notes,"ACTIVE",item.startOn,item.deadlineOn,true)}
+        // The write is the C++ command; QML only carries the current version.
+        if(item.taskId){editor.close();taskWorkspace.moveTaskToToday(item.taskId,item.rowVersion)}
+    }
+    function confirmTaskCancel(id) {
+        const item=taskWorkspace.task(id)
+        if(!item.taskId)return
+        pendingTask=item
+        confirmCancel.open()
+    }
+    function applyTaskCancel() {
+        const item=taskWorkspace.task(pendingTask.taskId)
+        if(item.taskId)taskWorkspace.changeState(item.taskId,item.rowVersion,"cancel")
+    }
+    function confirmTaskDelete(id) {
+        const item=taskWorkspace.task(id)
+        if(!item.taskId)return
+        pendingTask=item
+        confirmDelete.open()
+    }
+    function applyTaskDelete() {
+        const item=taskWorkspace.task(pendingTask.taskId)
+        // Soft delete only: the existing 8s undo entry stays the recovery path.
+        if(item.taskId)taskWorkspace.changeState(item.taskId,item.rowVersion,"delete")
+    }
+    function assignTaskByDrop(id,kind,parentId) {
+        navigateSafely(function(){
+            const item=taskWorkspace.task(id)
+            if(item.taskId){editor.close();taskWorkspace.moveTaskTo(item.taskId,item.rowVersion,kind,parentId)}
+        })
     }
     function focusHeader(item) {
         const flick=headerScroll.contentItem as Flickable
@@ -384,6 +413,8 @@ ApplicationWindow {
                         symbol: ["inbox","today","upcoming","circle","someday","logbook"][index]
                         count: index===1 ? mainWindow.taskWorkspace.todayTasks.count : -1
                         acceptsTaskDrop: index===1
+                        // today_target is the documented Upcoming→Today drop.
+                        objectName: index===1 ? "sidebarToday" : ""
                         onTaskDropped: function(taskId,version){mainWindow.addToToday(taskId)}
                         onClicked: mainWindow.changeView(mainWindow.viewCodes[index])
                     }
@@ -417,7 +448,8 @@ ApplicationWindow {
                                 symbolColor: Theme.catalogColor(modelData.colorKey)
                                 selected: mainWindow.taskWorkspace.view === modelData.kind+":"+modelData.id
                                 acceptsTaskDrop: modelData.kind === "project" || modelData.kind === "area"
-                                onTaskDropped: function(taskId,version) {mainWindow.assignTask(taskId,modelData.kind,modelData.id)}
+                                objectName: "sidebarCatalog-"+modelData.kind+"-"+modelData.id
+                                onTaskDropped: function(taskId,version) {mainWindow.assignTaskByDrop(taskId,modelData.kind,modelData.id)}
                                 onClicked: mainWindow.changeView(modelData.kind+":"+modelData.id)
                             }
                         }
@@ -519,6 +551,14 @@ ApplicationWindow {
                     text: mainWindow.taskWorkspace.errorText || mainWindow.taskWorkspace.infoText
                     color: mainWindow.taskWorkspace.errorText.length > 0 ? Theme.danger : Theme.success
                 }
+                Button {
+                    // Recovery must stay reachable when the database itself is
+                    // unusable, which is exactly when every other command is off.
+                    objectName: "openRecovery"
+                    visible: mainWindow.taskWorkspace.errorText.length > 0
+                    text: qsTr("恢复备份…")
+                    onClicked: dataTools.open()
+                }
                 WidgetAction {symbol: "close";description: qsTr("关闭提示"); onClicked: mainWindow.taskWorkspace.clearError() }
             }
             RowLayout {
@@ -607,6 +647,7 @@ ApplicationWindow {
                     showTodayMarker: mainWindow.taskWorkspace.view!=="today"
                     selectionMode: mainWindow.batchMode
                     canReorder: mainWindow.taskWorkspace.taskReorderingAllowed && !isDone
+                    canDrag: mainWindow.taskWorkspace.taskDragAllowed && !isDone
                     onDragStateChanged: function(active){mainWindow.draggedTaskRow=active ? taskRow : null;if(active)taskList.currentIndex=index}
                     canMoveUp: index>0
                     canMoveDown: index<taskList.count-1
@@ -621,9 +662,13 @@ ApplicationWindow {
                     onEditRequested: {taskList.currentIndex=index;mainWindow.openEditor(taskId)}
                     onQuickEditRequested: {taskList.currentIndex=index;mainWindow.openQuickEditor(taskId)}
                     onCompleteRequested: mainWindow.completeRow(taskRow)
-                    onActivateRequested: {const id=taskId;mainWindow.navigateSafely(function(){const item=mainWindow.taskWorkspace.task(id);editor.close();mainWindow.taskWorkspace.saveTask(id,item.rowVersion,item.title,item.notes,"ACTIVE","",item.deadlineOn,false)})}
+                    // Activating keeps the stored start date (FR-005): only the
+                    // planning state changes, so a paused task keeps its schedule.
+                    onActivateRequested: {const id=taskId;mainWindow.navigateSafely(function(){const item=mainWindow.taskWorkspace.task(id);editor.close();mainWindow.taskWorkspace.saveTask(id,item.rowVersion,item.title,item.notes,"ACTIVE",item.startOn,item.deadlineOn,false)})}
                     onMoveRequested: function(direction) {const id=taskId;mainWindow.navigateSafely(function(){mainWindow.taskWorkspace.moveTask(id,direction)})}
                     onDropRequested: function(source) {const target=taskId;mainWindow.navigateSafely(function(){mainWindow.taskWorkspace.dropTask(source,target)})}
+                    onCancelRequested: mainWindow.confirmTaskCancel(taskId)
+                    onDeleteRequested: mainWindow.confirmTaskDelete(taskId)
                 }
                 EmptyState {
                     anchors.centerIn: parent
@@ -795,7 +840,7 @@ ApplicationWindow {
                     Label {text: qsTr("提醒");font.pixelSize: Theme.bodySize;Layout.preferredWidth: Theme.bodySize*3}
                     ReminderField {id: reminder;workspace: mainWindow.taskWorkspace;objectName: "editorReminder";Layout.fillWidth: true;placeholderText: qsTr("添加提醒…");Accessible.name: qsTr("本地时间提醒，留空清除");onTextChanged: mainWindow.markDirty()}
                 }
-                Label {Layout.fillWidth: true;wrapMode: Text.Wrap;font.pixelSize: Theme.captionSize;color: Theme.secondary;text: planning.currentIndex===2 ? qsTr("日期已暂停；仅在应用运行时检查提醒，留空清除。") : qsTr("仅在应用运行时检查提醒，留空清除。")}
+                Label {Layout.fillWidth: true;wrapMode: Text.Wrap;font.pixelSize: Theme.captionSize;color: Theme.secondary;text: planning.currentIndex===2 ? qsTr("以后再说的任务不触发提醒；激活后恢复。仅在应用运行时检查，留空清除。") : qsTr("仅在应用运行时检查提醒，留空清除。")}
             }
             TaskDetailsFields {
                 id: extraFields
@@ -813,8 +858,8 @@ ApplicationWindow {
                 heading: qsTr("结束与删除");symbol: "trash"
                 Label {Layout.fillWidth: true;wrapMode: Text.Wrap;text: qsTr("取消后保留在已完成中；删除后可从列表提示撤销。");font.pixelSize: Theme.captionSize;color: Theme.secondary}
                 Flow {Layout.fillWidth: true;spacing: 12
-                ActionButton {symbol: "close";text: qsTr("取消任务");palette.buttonText: Theme.danger;enabled: mainWindow.editStatus==="OPEN" && !mainWindow.taskWorkspace.busy;onClicked: mainWindow.navigateSafely(function(){mainWindow.taskWorkspace.changeState(mainWindow.editId,mainWindow.editVersion,"cancel");editor.close()})}
-                ActionButton {symbol: "trash";text: qsTr("删除任务");palette.buttonText: Theme.danger;enabled: !mainWindow.taskWorkspace.busy;onClicked: mainWindow.navigateSafely(function(){mainWindow.taskWorkspace.changeState(mainWindow.editId,mainWindow.editVersion,"delete");editor.close()})}
+                ActionButton {objectName: "detailCancelTask";symbol: "close";text: qsTr("标记为已取消…");palette.buttonText: Theme.danger;enabled: mainWindow.editStatus==="OPEN" && !mainWindow.taskWorkspace.busy;onClicked: mainWindow.navigateSafely(function(){mainWindow.confirmTaskCancel(mainWindow.editId);editor.close()})}
+                ActionButton {objectName: "detailDeleteTask";symbol: "trash";text: qsTr("删除任务…");palette.buttonText: Theme.danger;enabled: !mainWindow.taskWorkspace.busy;onClicked: mainWindow.navigateSafely(function(){mainWindow.confirmTaskDelete(mainWindow.editId);editor.close()})}
             }
             }
             }
@@ -834,6 +879,9 @@ ApplicationWindow {
         dirty: mainWindow.draftDirty
         destinations: extraFields.destinations;tags: extraFields.tags;tagIds: extraFields.tagIds;destinationId: extraFields.selectedDestination.id
         reminderText: reminder.text
+        // The inline reminder button is explicitly labelled 完成并保存 and the
+        // panel states that it saves the current task edits too (UI-20 contract),
+        // so this one confirmation commits the whole visible draft atomically.
         onReminderEdited: function(value){reminder.text=value;mainWindow.pendingAction=null;mainWindow.saveEditor()}
         onDestinationEdited: function(kind,id){extraFields.selectDestination(kind,id,"")}
         onTagEdited: function(id,checked){extraFields.toggleTag(id,checked)}
@@ -920,6 +968,9 @@ ApplicationWindow {
         workspace: mainWindow.taskWorkspace
         onNewTaskRequested: {mainWindow.showNormal();mainWindow.requestActivate();mainWindow.newTask("today")}
         onOpenMainRequested: {mainWindow.showNormal();mainWindow.requestActivate()}
+        // Selecting the row is enough: opening the editor here would create a
+        // second editing surface, which the widget deliberately never does.
+        onOpenTaskRequested: function(taskId){mainWindow.showNormal();mainWindow.requestActivate();taskList.currentIndex=mainWindow.taskWorkspace.taskIndex(taskId)}
         onSettingsRequested: {mainWindow.showNormal();mainWindow.requestActivate();mainWindow.openTool("settings")}
     }
     OrganizationDialog { id: organization; parent: Overlay.overlay; anchors.centerIn: parent; workspace: mainWindow.taskWorkspace }
@@ -956,19 +1007,62 @@ ApplicationWindow {
         modal: true
         closePolicy: Popup.NoAutoClose
         contentItem: Label {wrapMode: Text.Wrap;text: qsTr("关闭主窗口后，提醒和桌面组件仍会运行。可从托盘打开主窗或退出；设置中可改为关闭即退出。")}
-        footer: DialogButtonBox {Button {text: qsTr("知道了，隐藏主窗口");onClicked: {if(mainWindow.taskWorkspace.setPreference("closeNoticeSeen",true)){firstClose.close();mainWindow.hide()}}}}
+        // Dismissal must never depend on the preference write: a read-only
+        // profile or full disk would otherwise trap the user in this dialog.
+        footer: ActionBar {
+            Button {objectName: "closeNoticeContinue";text: qsTr("知道了，隐藏主窗口");onClicked: {mainWindow.taskWorkspace.setPreference("closeNoticeSeen",true);firstClose.close();mainWindow.hide()}}
+            Button {objectName: "closeNoticeQuit";text: qsTr("退出 Tilo");onClicked: {firstClose.close();mainWindow.shuttingDown=true;Qt.quit()}}
+        }
     }
     Dialog {
         id: confirmToday
+        objectName: "confirmToday"
         parent: Overlay.overlay
         anchors.centerIn: parent
         title: qsTr("将未来任务加入今天？")
         width: Math.min(460,mainWindow.width-40)
         height: Math.min(210*Theme.scale,mainWindow.height-40)
         modal: true
-        standardButtons: Dialog.Ok|Dialog.Cancel
         contentItem: Label {wrapMode: Text.Wrap;text: qsTr("计划开始日期将从 %1 调整为今天，截止日期保持不变。").arg(mainWindow.todayTarget.startOn || "")}
+        // Rescheduling is reversible but still changes data, so the neutral
+        // choice holds the default Enter action.
+        footer: ActionBar {
+            Button {objectName: "cancelMoveToday";text: qsTr("保持原日期");onClicked: confirmToday.reject()}
+            Button {objectName: "confirmMoveToday";text: qsTr("改为今天");highlighted: true;onClicked: confirmToday.accept()}
+        }
         onAccepted: mainWindow.applyToday()
+    }
+    Dialog {
+        id: confirmCancel
+        objectName: "confirmCancelTask"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        title: qsTr("标记为已取消？")
+        width: Math.min(460,mainWindow.width-40)
+        modal: true
+        closePolicy: Popup.NoAutoClose
+        contentItem: Label {wrapMode: Text.Wrap;text: qsTr("任务会保留在已完成历史中，可随时恢复；开始、截止与提醒日期不变。")}
+        footer: ActionBar {
+            Button {objectName: "dismissCancelTask";text: qsTr("保留任务");onClicked: confirmCancel.reject()}
+            Button {objectName: "confirmCancelTaskButton";text: qsTr("标记为已取消");palette.buttonText: Theme.danger;onClicked: confirmCancel.accept()}
+        }
+        onAccepted: mainWindow.applyTaskCancel()
+    }
+    Dialog {
+        id: confirmDelete
+        objectName: "confirmDeleteTask"
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        title: qsTr("删除任务？")
+        width: Math.min(460,mainWindow.width-40)
+        modal: true
+        closePolicy: Popup.NoAutoClose
+        contentItem: Label {wrapMode: Text.Wrap;text: qsTr("删除后 8 秒内可从列表提示撤销；关联日程会保留。")}
+        footer: ActionBar {
+            Button {objectName: "dismissDeleteTask";text: qsTr("保留任务");onClicked: confirmDelete.reject()}
+            Button {objectName: "confirmDeleteTaskButton";text: qsTr("删除任务");palette.buttonText: Theme.danger;onClicked: confirmDelete.accept()}
+        }
+        onAccepted: mainWindow.applyTaskDelete()
     }
     ReminderCenter {
         id: notifications

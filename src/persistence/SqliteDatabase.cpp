@@ -97,6 +97,10 @@ SqliteDatabase::~SqliteDatabase()
     }
 }
 
+void SqliteDatabase::close()
+{
+    if(m_db.isValid() && m_db.isOpen())m_db.close();
+}
 Result<void> SqliteDatabase::open(const QString& path)
 {
     if (!m_db.isValid())

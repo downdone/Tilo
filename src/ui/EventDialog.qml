@@ -158,6 +158,12 @@ Dialog {
         Button {objectName: "saveEvent";text: qsTr("保存日程");highlighted: true;enabled: !root.workspace.busy;onClicked: root.save()}
     }
     DiscardChangesDialog {id: discard;objectName: "eventDiscard";parent: Overlay.overlay;anchors.centerIn: parent;width: Math.min(440,parent.width-32);title: qsTr("放弃未保存的日程修改？");modal: true;onRejected: root.pendingAction=null;onAccepted: {root.dirty=false;const action=root.pendingAction;root.pendingAction=null;if(action)action()}}
-    Dialog {id: confirmDelete;parent: Overlay.overlay;anchors.centerIn: parent;width: Math.min(440,parent.width-32);title: frequency.currentIndex>0 ? qsTr("删除整个循环系列？关联任务会保留。") : qsTr("删除日程？关联任务会保留。");modal: true;onRejected: root.pendingAction=null;onAccepted: root.workspace.deleteEvent(root.eventId,root.version)}
+    Dialog {id: confirmDelete;parent: Overlay.overlay;anchors.centerIn: parent;width: Math.min(440,parent.width-32);title: frequency.currentIndex>0 ? qsTr("删除整个循环系列？关联任务会保留。") : qsTr("删除日程？关联任务会保留。");modal: true;onRejected: root.pendingAction=null
+        contentItem: Label {text: qsTr("删除后 8 秒内可撤销，关联任务不受影响。");wrapMode: Text.Wrap}
+        footer: ActionBar {
+            Button {objectName: "cancelDeleteEvent";text: qsTr("保留日程");onClicked: confirmDelete.reject()}
+            Button {objectName: "confirmDeleteEvent";text: qsTr("删除日程");palette.buttonText: Theme.danger;enabled: !root.workspace.busy;onClicked: confirmDelete.accept()}
+        }
+        onAccepted: root.workspace.deleteEvent(root.eventId,root.version)}
     Connections {target: root.workspace;function onOperationFinished(operation,success){if(root.visible && success && (operation==="eventSave" || operation==="eventDelete")){root.dirty=false;root.close()}}}
 }

@@ -90,8 +90,12 @@ public:
     std::unique_ptr<RecurrenceService> recurrenceService;
     std::optional<ImportPlan> pendingImport;
     SystemClock clock;
+    // Retained so recovery can reopen the database after the live file was
+    // unreadable and no repositories existed.
+    QString recoveryPath;
     Result<QList<Task>> load(const QString& path)
     {
+        recoveryPath=path;
         recurrenceService.reset();recurrence.reset();service.reset();repository.reset();catalogService.reset();catalog.reset();
         const auto opened=database.open(path);
         if(!opened.ok()) return {{},opened.error};
@@ -346,6 +350,15 @@ QString TaskWorkspace::errorText() const
     if(key==QStringLiteral("importInvalid"))return tr("导入文件无效或与现有数据冲突：请检查版本、重复ID、日期和外键。数据库未修改。");
     if(key==QStringLiteral("transferFailed"))return tr("文件读写失败。请检查文件路径、磁盘空间和权限，当前数据已保留。");
     if(key==QStringLiteral("settingsWrite"))return tr("窗口或外观设置无法保存。请检查数据目录权限和磁盘空间后重新设置。");
+    if(key==QStringLiteral("dataDirectory"))return tr("无法创建数据目录。请检查磁盘空间和目录权限，或使用 --data-dir 指定可写目录。");
+    if(key==QStringLiteral("databaseOpen"))return tr("无法打开本地数据库。文件可能被占用或损坏；可从备份恢复，或打开所在文件夹手工处理。");
+    if(key==QStringLiteral("databaseRead"))return tr("读取本地数据库失败。请检查磁盘和文件权限后重试；若持续失败，请从备份恢复。");
+    if(key==QStringLiteral("databaseConfigure"))return tr("数据库无法启用 WAL 日志。请确认数据目录可写且不在不支持的文件系统上。");
+    if(key==QStringLiteral("databaseIntegrity"))return tr("本地数据库完整性检查未通过，已停止写入以保护数据。可从备份恢复，或保留文件后自行处理。");
+    if(key==QStringLiteral("migrationFailed"))return tr("数据库升级失败，已保留升级前的完整快照且未修改原数据。请从备份恢复或使用新版程序重试。");
+    if(key==QStringLiteral("checklistInvalid"))return tr("检查清单无效：步骤标题不能为空。请修改后重试。");
+    if(key==QStringLiteral("catalogInvalid"))return tr("项目、领域或标签无效。请检查名称、上级归属和状态后重试。");
+    if(key==QStringLiteral("orderInvalid"))return tr("无法移动该条目：目标位置不在同一列表中，或当前视图不允许排序。");
     return tr("本地数据库操作失败。输入已保留；请检查磁盘空间、目录权限后重试或重新加载。");
 }
 
@@ -685,12 +698,31 @@ void TaskWorkspace::maintain()
 }
 QString TaskWorkspace::localReminder(const QString& utc) const
 {return QDateTime::fromString(utc,Qt::ISODateWithMs).toLocalTime().toString(QStringLiteral("yyyy-MM-dd HH:mm"));}
-bool TaskWorkspace::runTransfer(const QString& operation,std::function<Result<QString>(TaskWorker&)> command)
+bool TaskWorkspace::runTransfer(const QString& operation,std::function<Result<QString>(TaskWorker&)> command,bool allowRecovery)
 {
-    if(!m_ready || !begin())return false;
+    // Recovery is the one command family that must run while the live database
+    // is unusable; everything else stays gated on a healthy load.
+    if((!m_ready && !allowRecovery) || !begin())return false;
     QPointer<TaskWorkspace> self(this);auto* worker=m_worker;
     QMetaObject::invokeMethod(worker,[self,worker,operation,command=std::move(command)]{
         const auto result=command(*worker);
+        // Recovery may run while the live database failed to open, in which case
+        // the repositories were never constructed. Reload through the worker so
+        // a successful restore actually reopens the file.
+        if(!worker->repository || !worker->catalog || !worker->recurrence) {
+            // Release the handle that failed to open before reopening, otherwise
+            // the replaced file stays locked on Windows.
+            worker->database.close();
+            const auto reopened=worker->load(worker->recoveryPath);
+            if(self)QMetaObject::invokeMethod(self.data(),[self,result,reopened,operation]{
+                if(!self)return;
+                self->m_busy=false;
+                self->m_error=result.ok()?reopened.error:result.error;
+                if(reopened.ok()){self->m_cache=reopened.value;self->m_ready=true;}
+                self->refresh();emit self->stateChanged();emit self->operationFinished(operation,result.ok() && reopened.ok());
+            },Qt::QueuedConnection);
+            return;
+        }
         const auto tasks=worker->repository->all();const auto catalog=worker->catalog->all();const auto rules=worker->recurrence->all();
         const auto events=EventRepository(worker->database.connection()).all();
         if(self)QMetaObject::invokeMethod(self.data(),[self,result,tasks,catalog,rules,events,operation]{
@@ -738,6 +770,52 @@ bool TaskWorkspace::applyImport(bool replace)
         w.pendingImport.reset();return Result<QString>{tr("已导入 %1 行，跳过 %2 行ID冲突。%3%4").arg(result.value.added).arg(result.value.skipped).arg(replace?tr("替换前已创建完整备份。"):QString()).arg(result.value.settingsApplied?QString():tr("数据已提交，但外观设置未能保存；请在设置页重试。")),{}};
     });
 }
+QString TaskWorkspace::dataDirectory() const
+{return m_path.isEmpty()?QString():QFileInfo(m_path).absolutePath();}
+QStringList TaskWorkspace::availableSnapshots() const
+{
+    if(m_path.isEmpty())return {};
+    const auto base=QFileInfo(m_path).dir();
+    QStringList names;
+    for(const auto& sub:{QStringLiteral("backups"),QStringLiteral("backups/daily"),QStringLiteral("backups/migrations")}) {
+        const QDir directory(base.filePath(sub));
+        for(const auto& name:directory.entryList({QStringLiteral("*.sqlite")},QDir::Files,QDir::Time))names.append(directory.filePath(name));
+    }
+    return names;
+}
+bool TaskWorkspace::restoreFromFile(const QString& input,bool snapshot)
+{
+    const QUrl url(input);const auto path=url.isLocalFile()?url.toLocalFile():input;
+    if(path.isEmpty() || !QFileInfo::exists(path)){m_error={ErrorCode::PersistenceError,QStringLiteral("transferFailed")};emit stateChanged();return false;}
+    return runTransfer(QStringLiteral("restore"),[path,snapshot](TaskWorker& w){
+        // Validate against a temporary copy before touching the live file.
+        const auto plan=DataTransfer::preview(path,snapshot);if(!plan.ok())return Result<QString>{{},plan.error};
+        const auto live=w.recoveryPath;
+        if(live.isEmpty())return Result<QString>::failure(ErrorCode::PersistenceError,QStringLiteral("databaseOpen"));
+        // A failed load leaves no repositories behind even though the SQLite
+        // handle itself opened; that is the reliable "database is unusable" signal.
+        if(w.repository && w.catalog && w.recurrence) {
+            // Healthy live database: keep the normal backed-up transactional path.
+            DataTransfer transfer(w.database);const auto applied=transfer.apply(plan.value,true);
+            if(!applied.ok())return Result<QString>{{},applied.error};
+            return Result<QString>{tr("已从备份恢复 %1 行数据；恢复前的数据已备份。").arg(applied.value.added),{}};
+        }
+        // Unusable live database: move it aside, copy the verified snapshot in its
+        // place, and let the caller reopen it. Nothing is deleted, and a failure
+        // at any step restores the previous file.
+        w.database.close();
+        const auto stamp=QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMdd-HHmmss"));
+        const auto aside=live+QStringLiteral(".corrupt-")+stamp;
+        if(QFileInfo::exists(live+QStringLiteral("-wal")))QFile::remove(live+QStringLiteral("-wal"));
+        if(QFileInfo::exists(live+QStringLiteral("-shm")))QFile::remove(live+QStringLiteral("-shm"));
+        if(!QFile::rename(live,aside))return Result<QString>::failure(ErrorCode::PersistenceError,QStringLiteral("transferFailed"));
+        if(!QFile::copy(path,live)) {
+            QFile::rename(aside,live);
+            return Result<QString>::failure(ErrorCode::PersistenceError,QStringLiteral("transferFailed"));
+        }
+        return Result<QString>{tr("已用所选备份替换无法打开的数据文件；原文件保留为 %1。").arg(QFileInfo(aside).fileName()),{}};
+    },true);
+}
 void TaskWorkspace::setThemeMode(int mode)
 {
     if(mode<0 || mode>2)return;
@@ -750,6 +828,55 @@ int TaskWorkspace::taskIndex(const QString& id) const
 {const auto& tasks=m_tasks.items();for(int index=0;index<tasks.size();++index)if(tasks[index].id==id)return index;return -1;}
 bool TaskWorkspace::taskReorderingAllowed() const
 {return m_ready && !m_busy && !m_includeCompleted && m_search.isEmpty() && m_tagFilter.isEmpty() && m_projectFilter.isEmpty() && (m_view==QStringLiteral("today") || m_view.startsWith(QStringLiteral("project:")));}
+bool TaskWorkspace::taskDragAllowed() const
+{
+    // Starting a drag is about the drop targets, not about a stored order: the
+    // sidebar's 今天 and project/area rows accept a semantic drop from any list.
+    // Known limitation: only a single task can be dragged (no multi-select
+    // drag), and the calendar day cells still take their own move dialog, so a
+    // drag cannot yet reschedule to an arbitrary date or between headings.
+    return m_ready && !m_busy && m_search.isEmpty() && m_view!=QStringLiteral("logbook")
+        && m_view!=QStringLiteral("month") && m_view!=QStringLiteral("week");
+}
+bool TaskWorkspace::moveTaskToToday(const QString& id,qint64 version)
+{
+    // Mirrors Main.qml's "addToToday": keep the deadline, move start_on to the
+    // local today and focus the task so it really enters the Today view.
+    if(!m_ready || m_busy)return false;
+    const auto found=m_taskIndex.constFind(id);
+    if(found==m_taskIndex.cend() || !found->deletedAtUtc.isEmpty() || found->status!=QStringLiteral("OPEN"))return false;
+    return runTask(QStringLiteral("moveToToday"),[id,version](TaskWorker& w){
+        // Same semantics as the existing add-to-Today action: activate, focus,
+        // start today, and leave deadline_on untouched.
+        TaskPatch patch;
+        patch.planningState=FieldPatch<QString>::set(QStringLiteral("ACTIVE"));
+        patch.startOn=FieldPatch<QDate>::set(w.clock.localToday());
+        patch.todayFocus=FieldPatch<bool>::set(true);
+        return w.service->edit(id,version,patch);
+    });
+}
+bool TaskWorkspace::moveTaskTo(const QString& id,qint64 version,const QString& kind,const QString& parentId)
+{
+    if(!m_ready || m_busy)return false;
+    if(kind!=QStringLiteral("project") && kind!=QStringLiteral("area"))return false;
+    if(parentId.isEmpty())return false;
+    TaskPatch patch;
+    if(kind==QStringLiteral("project")) {
+        patch.projectId=FieldPatch<QString>::set(parentId);
+        // Selecting a project clears the direct area (FR-007 mutual exclusion);
+        // the service also clears an incompatible heading for us.
+        patch.areaId=FieldPatch<QString>::clear();
+        patch.headingId=FieldPatch<QString>::clear();
+    } else {
+        patch.areaId=FieldPatch<QString>::set(parentId);
+        // A direct area clears the project, which also drops its heading.
+        patch.projectId=FieldPatch<QString>::clear();
+        patch.headingId=FieldPatch<QString>::clear();
+    }
+    return runTask(QStringLiteral("moveTo"),[id,version,patch](TaskWorker& w){
+        return w.service->edit(id,version,patch);
+    });
+}
 bool TaskWorkspace::canMoveTask(const QString& id,int direction) const
 {
     if(!taskReorderingAllowed() || (direction!=-1 && direction!=1))return false;

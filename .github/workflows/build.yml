@@ -1,20 +1,37 @@
 name: Build and test
+
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
+
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   desktop:
+    name: ${{ matrix.name }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: windows-2022
+          - name: Windows x64
+            os: windows-2022
             arch: win64_msvc2022_64
-          - os: macos-15
+            preset: windows-msvc
+          - name: macOS arm64
+            os: macos-15
             arch: clang_64
+            preset: macos-release
+          - name: macOS x86_64
+            os: macos-15-intel
+            arch: clang_64
+            preset: macos-release
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -24,10 +41,27 @@ jobs:
           arch: ${{ matrix.arch }}
           cache: true
       - name: Configure
-        run: cmake -S . -B build/ci -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+        shell: bash
+        env:
+          TILO_QT: ${{ env.QT_ROOT_DIR }}
+        run: cmake --preset ${{ matrix.preset }}
       - name: Build
-        run: cmake --build build/ci --config Release --parallel 4
+        shell: bash
+        run: cmake --build --preset ${{ matrix.preset }} --parallel 4
       - name: Test
-        run: ctest --test-dir build/ci -C Release --output-on-failure --no-tests=error
+        shell: bash
+        run: ctest --preset ${{ matrix.preset }}
       - name: QML lint
-        run: cmake --build build/ci --config Release --target tilo_qmllint
+        shell: bash
+        run: cmake --build --preset ${{ matrix.preset }} --target tilo_qmllint tilo_style_qmllint
+
+  checks:
+    name: Repository checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750db5838078e36cf38b85af677262 # v4
+      - name: Colour contrast audit
+        run: python3 scripts/check-ui-colors.py
+      - name: Documentation links
+        shell: pwsh
+        run: ./scripts/check-docs.ps1

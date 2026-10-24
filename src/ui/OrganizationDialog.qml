@@ -145,8 +145,11 @@ Dialog {
         anchors.centerIn: parent
         title: qsTr("删除组织项？")
         modal: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
         contentItem: Label { text: qsTr("相关任务会保留，项目或领域归属会解除。确认继续？");wrapMode: Text.Wrap }
+        footer: ActionBar {
+            Button {objectName: "cancelDeleteCatalog";text: qsTr("保留");onClicked: confirmDelete.reject()}
+            Button {objectName: "confirmDeleteCatalog";text: qsTr("删除");palette.buttonText: Theme.danger;onClicked: confirmDelete.accept()}
+        }
         onAccepted: root.workspace.deleteCatalog(root.selected.kind, root.selected.id, root.selected.rowVersion)
     }
     Dialog {
@@ -157,8 +160,11 @@ Dialog {
         anchors.centerIn: parent
         title: qsTr("结束项目？")
         modal: true
-        standardButtons: Dialog.Ok | Dialog.Cancel
         contentItem: Label { text: qsTr("项目仍有 %1 项未完成任务。不会自动完成它们；开放任务从活动视图隐藏，可恢复项目后继续。").arg(root.workspace.openProjectTasks(root.selected.id || ""));wrapMode: Text.Wrap }
+        footer: ActionBar {
+            Button {objectName: "cancelCompleteProject";text: qsTr("保持进行中");onClicked: confirmComplete.reject()}
+            Button {objectName: "confirmCompleteProject";text: qsTr("结束项目");palette.buttonText: Theme.danger;onClicked: confirmComplete.accept()}
+        }
         onAccepted: root.save()
     }
     Connections { target: root.workspace; function onOperationFinished(operation, success) { if (operation === "catalog" && success) root.resetForm() } }

@@ -50,3 +50,16 @@ UI-18：Windows原生219阶段自动合成场景/截图PASS，包括快速→完
 UI-19验收范围：Windows新增原行展开/完整可见、长备注摘要不丢内容、大字号焦点与手动滚动、新建资料与任务草稿的独立提交、成功完成反馈/减少动态效果、菜单同窗呈现和10k菜单可用性预算。命令耗时与原生两次呈现上界分别记录，不宣称所有物理输入延迟。最终执行结果见PROGRESS；真实键鼠/IME/读屏/多屏/睡眠/8h/干净机和macOS仍UNVERIFIED。
 
 UI-20新增行范围：连续跨日周段/循环日程实际实例与时间预览、精简提醒一次提交、任务和清单合成拖动/Esc/落库、导航独立折叠偏好、校验错误放弃和存储错误保留。Windows构建/数据/合成QML证据见PROGRESS；物理手势/真实键盘读屏/平台系统门禁及macOS仍UNVERIFIED。
+
+## V1.0 评审修复补充（2026-10-25）
+
+| 范围 | Windows11 x64 / Qt6.10.2 MinGW | macOS |
+|---|---|---|
+| 破坏性确认（取消/删除任务、删除日程、替换数据、恢复快照、停止规则、改期）安全选项优先、危险色、非默认回车 | PASS；合成流程断言显式页脚与危险动作按钮不可回车触发 | UNVERIFIED |
+| 数据库不可用时的备份恢复（`restoreFromFile`）整体替换 | PASS；`corruptDatabaseCanStillBeRestoredFromSnapshot` 用损坏文件与真实快照在 QTemporaryDir 内验证 | UNVERIFIED |
+| 行菜单取消/删除与详情页一致；菜单无隐藏项留白 | PASS；原生与 offscreen 合成流程 | UNVERIFIED |
+| 拖动范围：任意列表→侧栏「今天」、拖入项目/领域 | PASS；C++ 判定与合成拖放，行程确认与环境限制见下 | UNVERIFIED |
+| 键盘可达性：快速编辑日期/截止/标签/项目/提醒、月格事项、议程、组件行、桌面日历缩放移动 | PASS（Qt 合成按键）；真实辅助技术与读屏 UNVERIFIED | UNVERIFIED |
+| 首次关闭提示含「退出 Tilo」且不依赖偏好写入 | PASS；合成流程 | UNVERIFIED |
+
+本轮原生验证的环境限制（必须如实记录）：验证时主机处于 Windows 锁定会话（`LogonUI` 运行）。此时 D3D11 后端对未处于前台的窗口不再交换帧，脚本化原生流程会停在依赖新帧的断言（菜单间距、行内卡片宽度），而同一构建在 `QSG_RHI_BACKEND=opengl`、`QT_QPA_PLATFORM=offscreen` 下全流程通过，未修改的上一提交二进制在 D3D11 下同样失败。因此本轮的 D3D11 原生 PASS 只在会话解锁时可复现；解锁会话的 D3D11 实测与真实键鼠、IME、读屏、多屏、睡眠、8h、干净机与 macOS 仍为 UNVERIFIED。不得据此宣称这些门禁已通过。

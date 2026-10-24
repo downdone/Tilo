@@ -123,6 +123,12 @@ Dialog {
         Button { text: qsTr("保存规则"); enabled: !root.workspace.busy; highlighted: true; onClicked: root.save() }
     }
     DiscardChangesDialog {id: discard;objectName: "recurrenceDiscard";parent: Overlay.overlay;anchors.centerIn: parent;width: Math.min(440,parent.width-32);modal: true;title: qsTr("放弃未保存的规则修改？");onRejected: root.pendingAction=null;onAccepted: {root.dirty=false;const action=root.pendingAction;root.pendingAction=null;if(action)action()}}
-    Dialog { id: stopConfirm; modal: true; title: qsTr("停止产生新实例？"); standardButtons: Dialog.Ok|Dialog.Cancel; onAccepted: root.workspace.stopRecurrence(root.selected.id,root.selected.rowVersion,removeFuture.checked) }
+    Dialog { id: stopConfirm; parent: Overlay.overlay; anchors.centerIn: parent; width: Math.min(440,parent.width-40); modal: true; title: qsTr("停止产生新实例？")
+        contentItem: Label {text: qsTr("已生成的实例会保留；勾选“同时移除未来实例”时会软删将来的开放实例。");wrapMode: Text.Wrap}
+        footer: ActionBar {
+            Button {objectName: "cancelStopRecurrence";text: qsTr("保持规则");onClicked: stopConfirm.reject()}
+            Button {objectName: "confirmStopRecurrence";text: qsTr("停止规则");palette.buttonText: Theme.danger;onClicked: stopConfirm.accept()}
+        }
+        onAccepted: root.workspace.stopRecurrence(root.selected.id,root.selected.rowVersion,removeFuture.checked) }
     Connections { target: root.workspace; function onOperationFinished(operation,success){if(operation==="recurrence" && success){root.dirty=false;root.load({})}} }
 }

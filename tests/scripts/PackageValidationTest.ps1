@@ -10,10 +10,10 @@ foreach($relative in $required) {
     New-Item -ItemType Directory -Path (Split-Path $path -Parent) -Force | Out-Null
     [IO.File]::WriteAllText($path,'synthetic fixture; not a runnable Qt deployment')
 }
-$info=[ordered]@{version='1.0.0-rc.2';sourceRevision=('a'*40);qt='6.10.2';schemaVersion=4;scope='Windows x64 release';signed=$false}
+$info=[ordered]@{version='1.0.0';sourceRevision=('a'*40);qt='6.10.2';schemaVersion=4;scope='Windows x64 release';signed=$false}
 $info | ConvertTo-Json | Set-Content (Join-Path $root 'BUILD-INFO.json')
 $entries=@(Get-ChildItem $root -File -Recurse | ForEach-Object {@{path=[IO.Path]::GetRelativePath($root,$_.FullName).Replace('\','/');size=$_.Length;sha256=(Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()}})
-$manifest=@{version='1.0.0-rc.2';qt='6.10.2';platform='windows-x64';scope='release';files=$entries}
+$manifest=@{version='1.0.0';qt='6.10.2';platform='windows-x64';scope='release';files=$entries}
 function Write-Manifest {$manifest | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $root 'manifest.json')}
 function Expect-Rejection([string]$Case) {
     $rejected=$false
@@ -29,7 +29,7 @@ try {
     $extra=Join-Path $root 'extra.txt';[IO.File]::WriteAllText($extra,'extra');Expect-Rejection 'unlisted file';Remove-Item -LiteralPath $extra
     $manifest.files=@($entries)+@($entries[0]);Write-Manifest;Expect-Rejection 'duplicate path'
     $manifest.files=@($entries)+@(@{path='../outside.txt';size=0;sha256=('0'*64)});Write-Manifest;Expect-Rejection 'path traversal'
-    $manifest.files=@($entries);$manifest.version='9.0.0';Write-Manifest;Expect-Rejection 'metadata version conflict';$manifest.version='1.0.0-rc.2'
+    $manifest.files=@($entries);$manifest.version='9.0.0';Write-Manifest;Expect-Rejection 'metadata version conflict';$manifest.version='1.0.0'
     Write-Manifest;$text=Get-Content (Join-Path $root 'manifest.json') -Raw
     [IO.File]::WriteAllText((Join-Path $root 'manifest.json'),$text.Replace('"qt": "6.10.2"','"qt": "6.10.2", "qt": "6.10.2"'));Expect-Rejection 'duplicate JSON key';Write-Manifest
     $sensitive=Join-Path $root 'personal.sqlite';[IO.File]::WriteAllText($sensitive,'synthetic');Expect-Rejection 'database artifact';Remove-Item -LiteralPath $sensitive

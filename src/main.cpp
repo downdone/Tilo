@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
     QQuickStyle::setFallbackStyle(QStringLiteral("Basic"));
 
     QCommandLineParser parser;
-    parser.setApplicationDescription(QStringLiteral("Tilo Windows V1 release candidate"));
+    parser.setApplicationDescription(QStringLiteral("Tilo — offline tasks and calendar"));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addOption({QStringLiteral("smoke-test"), QStringLiteral("Check QML startup and exit without user data access.")});
